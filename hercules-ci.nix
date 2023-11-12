@@ -16,7 +16,6 @@
       dayOfWeek = "Sun";
     };
   };
-  hercules-ci.github-pages.branch = "main";
 
   herculesCI.ciSystems = [ "x86_64-linux" ];
 }
