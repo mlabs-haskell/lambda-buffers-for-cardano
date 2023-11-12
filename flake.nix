@@ -22,9 +22,9 @@
         ./settings.nix
         ./pre-commit.nix
         ./hercules-ci.nix
-        api/build.nix
+        ./api/build.nix
         ./validation/demo-plutarch/build.nix
-        #        ./validation/demo-plutustx/build.nix
+        ./validation/demo-plutustx/build.nix
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];
