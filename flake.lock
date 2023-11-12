@@ -2492,23 +2492,6 @@
     "cardano-haskell-packages_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1699621724,
-        "narHash": "sha256-9ILdzJPu8Nzb7zVCSra95U3MddZL3Lq8RmX4C4/Tiak=",
-        "owner": "input-output-hk",
-        "repo": "cardano-haskell-packages",
-        "rev": "53af7297cedefb4bbd463c070b559b6be83f0c2e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "ref": "repo",
-        "repo": "cardano-haskell-packages",
-        "type": "github"
-      }
-    },
-    "cardano-haskell-packages_3": {
-      "flake": false,
-      "locked": {
         "lastModified": 1670900592,
         "narHash": "sha256-SZlQp3W0WdxB00gO5A0krgDw7CLESm5jWZ6S+GPxCxA=",
         "owner": "input-output-hk",
@@ -10328,7 +10311,7 @@
     },
     "lbf": {
       "inputs": {
-        "cardano-haskell-packages": "cardano-haskell-packages_2",
+        "cardano-haskell-packages": "cardano-haskell-packages",
         "crane": "crane",
         "ctl": "ctl",
         "flake-parts": "flake-parts_2",
@@ -11087,7 +11070,7 @@
     },
     "mlabs-tooling": {
       "inputs": {
-        "cardano-haskell-packages": "cardano-haskell-packages_3",
+        "cardano-haskell-packages": "cardano-haskell-packages_2",
         "emanote": "emanote_2",
         "flake-parts": "flake-parts_5",
         "haskell-nix": "haskell-nix_11",
@@ -17943,7 +17926,6 @@
     },
     "root": {
       "inputs": {
-        "cardano-haskell-packages": "cardano-haskell-packages",
         "ctl": [
           "lbf",
           "ctl"

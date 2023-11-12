@@ -10,9 +10,6 @@
     iohk-nix.follows = "lbf/iohk-nix";
     flake-parts.follows = "lbf/flake-parts";
     plutarch.follows = "lbf/plutarch";
-    cardano-haskell-packages.url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
-    cardano-haskell-packages.flake = false;
-
   };
 
   outputs = inputs@{ flake-parts, ... }:
@@ -25,6 +22,7 @@
         ./api/build.nix
         ./validation/demo-plutarch/build.nix
         ./validation/demo-plutustx/build.nix
+        ./transactions/demo-ctl/build.nix
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];
