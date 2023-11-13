@@ -3383,17 +3383,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1699525353,
-        "narHash": "sha256-m/DqG0rK3piDthCZXzacbWHcogzomDbcN8VvzsVCczw=",
+        "lastModified": 1699881565,
+        "narHash": "sha256-GtJ+lU1EeA1pNJ0JBFotcncHhqBdJEmmrf9FisqPOOQ=",
         "owner": "plutonomicon",
         "repo": "cardano-transaction-lib",
-        "rev": "fbf56b2965752ced05fd7f3a2d7ae6778e566df9",
+        "rev": "02869ce91023a5c57c836037e84067e4fa90263e",
         "type": "github"
       },
       "original": {
         "owner": "plutonomicon",
+        "ref": "bladyjoker/runpurstest-fix",
         "repo": "cardano-transaction-lib",
-        "rev": "fbf56b2965752ced05fd7f3a2d7ae6778e566df9",
         "type": "github"
       }
     },
@@ -10330,11 +10330,11 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1699820323,
-        "narHash": "sha256-xB5PqIP2s2dWTK5m4pR+bCQI51tCYad0JR3/8pwUm0I=",
+        "lastModified": 1699881848,
+        "narHash": "sha256-jWdPvPpMj9ghM+TyF9NuySQEIf8s7UoEfeaBYwk2quk=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "26457b65cb2ac08264716f837541e1bf490ada6b",
+        "rev": "37082329ec7a6182b8d593c74d83dd0857bf3d2e",
         "type": "github"
       },
       "original": {
