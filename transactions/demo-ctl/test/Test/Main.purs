@@ -45,9 +45,6 @@ readDemoConfig fp = do
 lbBytesToByteArray :: Bytes -> ByteArray
 lbBytesToByteArray (Bytes uint8Array) = ByteArray uint8Array
 
-lbBytesFromByteArray :: ByteArray -> Bytes
-lbBytesFromByteArray (ByteArray uint8Array) = Bytes uint8Array
-
 eqValidatorFromConfig :: Config -> Validator
 eqValidatorFromConfig config = Validator (plutusV2Script (lbBytesToByteArray (unwrap (unwrap config).eqValidator)))
 
@@ -64,8 +61,6 @@ main =
           plutusTxEqValidator = eqValidatorFromConfig demoPlutusTxConfig
 
           plutarchEqValidatorHash = validatorHash plutarchEqValidator
-
-          plutusTxEqValidatorHash = validatorHash plutusTxEqValidator
         exampleTokenName :: TokenName <- maybe (throw "Wanted to create an example TokenName but failed") pure (byteArrayFromAscii "example token name" >>= mkTokenName)
         examplePlutusBytes :: ByteArray <- maybe (throw "Wanted to create an example Bytes but failed") pure (byteArrayFromAscii "example bytes")
         let
@@ -104,46 +99,51 @@ main =
           flip cancelWith (effectCanceler (exitCode 1)) do
             interpretWithConfig
               defaultConfig { timeout = Just $ Milliseconds 70_000.0, exit = true }
-              $ testPlutipContracts defaultPlutipConfig (suite plutarchEqValidator exampleEqDatumA exampleEqDatumB)
+              $ testPlutipContracts defaultPlutipConfig (suite plutarchEqValidator plutusTxEqValidator exampleEqDatumA exampleEqDatumB)
 
-suite :: Validator -> EqDatum -> EqDatum -> TestPlanM PlutipTest Unit
-suite eqValidator exampleEqDatumA exampleEqDatumB = do
+suite :: Validator -> Validator -> EqDatum -> EqDatum -> TestPlanM PlutipTest Unit
+suite plutarchEqValidator plutusTxEqValidator exampleEqDatumA exampleEqDatumB = do
   group "CTL Demo tests" do
-    test "Store an example EqDatum at EqValidator and then check if (not)equal" do
-      let
-        distribution :: InitialUTxOs
-        distribution =
-          [ BigInt.fromInt 5_000_000
-          , BigInt.fromInt 2_000_000_000
-          ]
-      withWallets distribution \wallet -> do
-        withKeyWallet wallet do
-          let
-            createEqDatumATx = Transactions.createValueTx (validatorHash eqValidator) exampleEqDatumA
+    group "Plutarch" $ eqValidatorTest plutarchEqValidator exampleEqDatumA exampleEqDatumB
+    group "PlutusTx" $ eqValidatorTest plutusTxEqValidator exampleEqDatumA exampleEqDatumB
 
-            createEqDatumBTx = Transactions.createValueTx (validatorHash eqValidator) exampleEqDatumB
-          logInfo' "Storing EqDatum A @ EqV"
-          txHash <- submitTxFromConstraints mempty createEqDatumATx
-          awaitTxConfirmed txHash
-          logInfo' $ "Successfully stored EqDatum A @ EqV with " <> show txHash
-          let
-            eqValidatorAddress = scriptHashAddress (validatorHash eqValidator) Nothing
-          eqValidatorUtxos <- utxosAt eqValidatorAddress
-          let
-            eqDatumAIsEqualTx /\ eqDatumAIsEqualCtx = Transactions.inputIsEqualTx eqValidator eqValidatorUtxos (TransactionInput { transactionId: txHash, index: UInt.fromInt 0 }) exampleEqDatumA
-          logInfo' "Checking if EqDatum A is the same as the one previously stored (it should be)"
-          txHash' <- submitTxFromConstraints eqDatumAIsEqualCtx eqDatumAIsEqualTx
-          awaitTxConfirmed txHash'
-          logInfo' "Successfully checked that they are indeed the same"
-          logInfo' "Storing EqDatum B @ EqVal"
-          txHash'' <- submitTxFromConstraints mempty createEqDatumBTx
-          awaitTxConfirmed txHash''
-          logInfo' $ "Successfully stored EqDatum B with " <> show txHash
-          eqValidatorUtxos' <- utxosAt eqValidatorAddress
-          let
-            eqDatumAIsDifferentTx /\ eqDatumAIsDifferentCtx = Transactions.inputIsNotEqualTx eqValidator eqValidatorUtxos' (TransactionInput { transactionId: txHash'', index: UInt.fromInt 0 }) exampleEqDatumA
-          logInfo' "Checking if Eq Datum A is different to the one previously stored (it should be)"
-          txHash''' <- submitTxFromConstraints eqDatumAIsDifferentCtx eqDatumAIsDifferentTx
-          awaitTxConfirmed txHash'''
-          logInfo' "Successfully check that they are indeed different"
-          pure unit
+eqValidatorTest :: Validator -> EqDatum -> EqDatum -> TestPlanM PlutipTest Unit
+eqValidatorTest eqValidator exampleEqDatumA exampleEqDatumB =
+  test "Store an example EqDatum at EqValidator and then check if (not)equal" do
+    let
+      distribution :: InitialUTxOs
+      distribution =
+        [ BigInt.fromInt 5_000_000
+        , BigInt.fromInt 2_000_000_000
+        ]
+    withWallets distribution \wallet -> do
+      withKeyWallet wallet do
+        let
+          createEqDatumATx = Transactions.createValueTx (validatorHash eqValidator) exampleEqDatumA
+
+          createEqDatumBTx = Transactions.createValueTx (validatorHash eqValidator) exampleEqDatumB
+        logInfo' "Storing EqDatum A @ EqV"
+        txHash <- submitTxFromConstraints mempty createEqDatumATx
+        awaitTxConfirmed txHash
+        logInfo' $ "Successfully stored EqDatum A @ EqV with " <> show txHash
+        let
+          eqValidatorAddress = scriptHashAddress (validatorHash eqValidator) Nothing
+        eqValidatorUtxos <- utxosAt eqValidatorAddress
+        let
+          eqDatumAIsEqualTx /\ eqDatumAIsEqualCtx = Transactions.inputIsEqualTx eqValidator eqValidatorUtxos (TransactionInput { transactionId: txHash, index: UInt.fromInt 0 }) exampleEqDatumA
+        logInfo' "Checking if EqDatum A is the same as the one previously stored (it should be)"
+        txHash' <- submitTxFromConstraints eqDatumAIsEqualCtx eqDatumAIsEqualTx
+        awaitTxConfirmed txHash'
+        logInfo' "Successfully checked that they are indeed the same"
+        logInfo' "Storing EqDatum B @ EqVal"
+        txHash'' <- submitTxFromConstraints mempty createEqDatumBTx
+        awaitTxConfirmed txHash''
+        logInfo' $ "Successfully stored EqDatum B with " <> show txHash
+        eqValidatorUtxos' <- utxosAt eqValidatorAddress
+        let
+          eqDatumAIsDifferentTx /\ eqDatumAIsDifferentCtx = Transactions.inputIsNotEqualTx eqValidator eqValidatorUtxos' (TransactionInput { transactionId: txHash'', index: UInt.fromInt 0 }) exampleEqDatumA
+        logInfo' "Checking if Eq Datum A is different to the one previously stored (it should be)"
+        txHash''' <- submitTxFromConstraints eqDatumAIsDifferentCtx eqDatumAIsDifferentTx
+        awaitTxConfirmed txHash'''
+        logInfo' "Successfully check that they are indeed different"
+        pure unit

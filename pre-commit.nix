@@ -10,6 +10,7 @@
       pre-commit = {
         settings = {
           excludes = [
+            "transactions/ctl-demo/spago-packages.nix"
           ];
 
           hooks = {
