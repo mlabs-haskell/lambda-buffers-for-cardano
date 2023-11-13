@@ -1,0 +1,36 @@
+-- Demo.Plutus contains all the protocol datums
+module Demo.Plutus
+
+import Prelude
+import qualified Plutus.V1 as Plutus
+import Plutus.V1 (PlutusData, AssetClass, Address)
+
+record Record a = {
+  foo : AssetClass,
+  bar : Address,
+  baz : a
+ }
+derive Eq (Record a)
+derive PlutusData (Record a)
+
+prod Product b = AssetClass Address b
+derive Eq (Product a)
+derive PlutusData (Product a)
+
+sum Sum a = Foo AssetClass | Bar Address | Baz a
+derive Eq (Sum a)
+derive PlutusData (Sum a)
+
+-- EqDatum is stored at EqValidator UTxOs
+record EqDatum = {
+  rec : Record Plutus.Bytes,
+  prod : Product Plutus.Bytes,
+  sum : Sum Plutus.Bytes
+  }
+derive Eq EqDatum
+derive PlutusData EqDatum
+
+-- EqRedeemer denotes the type of validation performed by the EqValidator
+sum EqRedeemer = IsEqual EqDatum | IsNotEqual EqDatum
+derive Eq EqRedeemer
+derive PlutusData EqRedeemer

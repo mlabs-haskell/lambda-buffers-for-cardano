@@ -16,10 +16,6 @@
       dayOfWeek = "Sun";
     };
   };
-  hercules-ci.github-pages.branch = "main";
-  perSystem = { config, ... }: {
-    hercules-ci.github-pages.settings.contents = config.packages.lambda-buffers-book;
-  };
 
   herculesCI.ciSystems = [ "x86_64-linux" ];
 }
