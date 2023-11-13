@@ -1,7 +1,7 @@
 {
   description = "LambdaBuffers Cardano Demo";
   inputs = {
-    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=bladyjoker/small-fix-catastrophic";
+    lbf.url = "github:mlabs-haskell/lambda-buffers";
     haskell-nix.follows = "lbf/haskell-nix";
     nixpkgs.follows = "lbf/nixpkgs";
     pre-commit-hooks.follows = "lbf/pre-commit-hooks";

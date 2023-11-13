@@ -10330,16 +10330,15 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1699881848,
+        "lastModified": 1699883004,
         "narHash": "sha256-jWdPvPpMj9ghM+TyF9NuySQEIf8s7UoEfeaBYwk2quk=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "37082329ec7a6182b8d593c74d83dd0857bf3d2e",
+        "rev": "c7330e1826c74414d3870a2e511b53da03e8f854",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "bladyjoker/small-fix-catastrophic",
         "repo": "lambda-buffers",
         "type": "github"
       }
