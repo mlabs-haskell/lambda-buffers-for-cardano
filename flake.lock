@@ -10330,11 +10330,11 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1700667673,
-        "narHash": "sha256-PWFSKzQWqWIn4vZEBq27KFYEcNPTeqWTuphYz2paHZQ=",
+        "lastModified": 1701445757,
+        "narHash": "sha256-7km9N5sqRKfSOj80RAP4AVvoJGyiaqS/2EaJQ3WMbqY=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "05cdec80aae65372c7b73b4dcdd6ce3f8cb67580",
+        "rev": "506fe69ec40486c53669eabe22ddd46bda408a6d",
         "type": "github"
       },
       "original": {
