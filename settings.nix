@@ -42,14 +42,14 @@
           settings = {
 
             haskell = {
-              index-state = "2022-12-01T00:00:00Z";
-              compiler-nix-name = "ghc925";
+              index-state = "2023-11-26T21:52:49Z";
+              compiler-nix-name = "ghc963";
             };
 
             shell = {
 
               tools = [
-                pkgs.haskell.packages.ghc924.fourmolu
+                pkgs.haskellPackages.fourmolu
                 pkgs.haskellPackages.apply-refact
                 inputs.pre-commit-hooks.outputs.packages.${system}.nixpkgs-fmt
                 inputs.pre-commit-hooks.outputs.packages.${system}.cabal-fmt
