@@ -1,4 +1,5 @@
--- {-# OPTIONS_GHC -fplugin-opt PlutusTx.Plugin #-}
+{-# OPTIONS_GHC -fplugin-opt PlutusTx.Plugin:target-version=1.0.0 #-}
+
 module Demo.Cli.Compile (CompileOpts (..), CompileMode (..), compile) where
 
 import Data.ByteString qualified

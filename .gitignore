@@ -21,3 +21,8 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+.direnv/
+.pre-commit-config.yaml
+.extras
+.spago/
+node_modules/
