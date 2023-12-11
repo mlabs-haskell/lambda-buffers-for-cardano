@@ -9274,11 +9274,11 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1702232266,
-        "narHash": "sha256-elXJDdx1gnH49j2B3CXf1NbsZzPWdtXeAosABi2LwBQ=",
+        "lastModified": 1702321767,
+        "narHash": "sha256-Uo8xfqTYnF+Kk3bbLomM6JDEodu0OtD2M9ixT7zWJcA=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "d68eb6f912c72d15b5591429d0535095f78186f3",
+        "rev": "b1905095b5b9962cb1cfd8858f0b7e5b16dfe5b5",
         "type": "github"
       },
       "original": {
@@ -15399,16 +15399,15 @@
     "plutarch": {
       "flake": false,
       "locked": {
-        "lastModified": 1702077805,
-        "narHash": "sha256-vyhLW5aePVrjuFnVh4VuiVljoYda0R1/8Qy0TuSPEGc=",
+        "lastModified": 1702321643,
+        "narHash": "sha256-4k7/JxSVQRntQgWqc5jMAKC9h0wkcPOtBnDP1Ktnt/s=",
         "owner": "plutonomicon",
         "repo": "plutarch-plutus",
-        "rev": "0c82c542ee03f63d290451b5c6c4d79a07ba0726",
+        "rev": "c7cd4e17eb4f5dc39b7b43c611e94418acc1e60c",
         "type": "github"
       },
       "original": {
         "owner": "plutonomicon",
-        "ref": "seungheonoh/bumpPlutus",
         "repo": "plutarch-plutus",
         "type": "github"
       }
