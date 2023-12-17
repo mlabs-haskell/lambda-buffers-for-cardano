@@ -6739,16 +6739,15 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1702835179,
+        "lastModified": 1702836389,
         "narHash": "sha256-6npTgQBuQUCGIdbx7YaU0cjCr9GynypLoJSYRg/uB5c=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "f61e0ee38044a3c426f21095e539ac1f8cbc8591",
+        "rev": "cadc930a8cb57d079f9f6b066d2f682ef6deb361",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "bladyjoker/update-haskell",
         "repo": "lambda-buffers",
         "type": "github"
       }
