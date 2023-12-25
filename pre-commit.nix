@@ -16,6 +16,7 @@
           hooks = {
             nixpkgs-fmt.enable = true;
             deadnix.enable = true;
+            statix.enable = true;
             cabal-fmt.enable = true;
             fourmolu.enable = true;
             shellcheck.enable = true;
@@ -28,6 +29,7 @@
 
           settings = {
             ormolu.cabalDefaultExtensions = true;
+            statix.ignore = [ "**spago-packages.nix" ];
           };
         };
       };
