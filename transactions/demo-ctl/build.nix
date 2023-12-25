@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  perSystem = { pkgs, config, system, inputs', ... }:
+  perSystem = { pkgs, pkgsForCtl, config, system, inputs', ... }:
 
     let
       pursFlake = inputs.lbf.lib.${system}.purescriptFlake {
@@ -43,9 +43,9 @@
               pkgs.nodejs-18_x
               pkgs.bashInteractive
               pkgs.fd
-              pkgs.plutip-server
-              pkgs.ogmios
-              pkgs.kupo
+              pkgsForCtl.plutip-server
+              pkgsForCtl.ogmios
+              pkgsForCtl.kupo
             ] ++ config.settings.shell.tools;
           shellHook = config.settings.shell.hook;
         };
