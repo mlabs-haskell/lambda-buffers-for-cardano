@@ -6842,16 +6842,15 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1703509370,
+        "lastModified": 1703511919,
         "narHash": "sha256-5PUBg2fMClaxreirl1eIrWWYvnyUTfuVLNbXLNXZxbA=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "b9ea2ead0a4ca04139842890716d0f6ccef3c4f9",
+        "rev": "b1036b86f20cdb171ed9834ebefdac3246dc800f",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "bladyjoker/nixpkgs-split",
         "repo": "lambda-buffers",
         "type": "github"
       }
@@ -10755,11 +10754,11 @@
     },
     "nixpkgs_86": {
       "locked": {
-        "lastModified": 1703510573,
-        "narHash": "sha256-QR8X8ErrriQ9IYjrDWT4UDozGI91mPh+2tO4dPFr+T4=",
+        "lastModified": 1703511138,
+        "narHash": "sha256-yFNZO7j0z0+Yp3IhP/3CMKPowBswHMwZeVPJwnhcHQ0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "6ec36d7234845cdb14d03d6dbe9996d6c76cded7",
+        "rev": "56c32b0530b05782df6410e8dda03738d14fc9e4",
         "type": "github"
       },
       "original": {

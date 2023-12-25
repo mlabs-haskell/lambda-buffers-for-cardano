@@ -12,7 +12,7 @@
     # Code quality automation
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
 
-    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=bladyjoker/nixpkgs-split";
+    lbf.url = "github:mlabs-haskell/lambda-buffers";
     haskell-nix.follows = "lbf/haskell-nix";
     iohk-nix.follows = "lbf/iohk-nix";
     ctl.follows = "lbf/ctl";
