@@ -16,6 +16,7 @@
         overlays = [
           inputs.haskell-nix.overlay
           inputs.iohk-nix.overlays.crypto
+          inputs.ctl.overlays.runtime
           inputs.ctl.overlays.purescript
           inputs.ctl.overlays.spago
         ];
