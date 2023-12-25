@@ -11687,6 +11687,10 @@
           "haskell-nix"
         ],
         "hci-effects": "hci-effects",
+        "iohk-nix": [
+          "lbf",
+          "iohk-nix"
+        ],
         "lbf": "lbf",
         "nixpkgs": "nixpkgs_86",
         "plutarch": [
