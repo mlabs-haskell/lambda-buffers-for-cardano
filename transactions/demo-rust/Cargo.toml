@@ -1,0 +1,16 @@
+[package]
+name = "demo-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lbf-prelude = { path = ".extras/lbf-prelude" }
+lbf-demo-config-api = { path = ".extras/lbf-demo-config-api" }
+lbf-demo-plutus-api = { path = ".extras/lbf-demo-plutus-api" }
+cardano-serialization-lib = "11.5.0"
+plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", features = [
+  "lbf",
+], rev = "d66d39c949f59e543c91ee36377c93422d8e9d75" }
+num-bigint = "0.4.4"
+num-integer = "0.1.45"
+linked-hash-map = "0.5.6"

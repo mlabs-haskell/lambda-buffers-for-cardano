@@ -13,10 +13,12 @@
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
 
     lbf.url = "github:mlabs-haskell/lambda-buffers";
+    flake-lang.url = "github:mlabs-haskell/flake-lang.nix/343eb66e7a2d6554fb3f02143ed8525952e2cf0b";
     haskell-nix.follows = "lbf/haskell-nix";
     iohk-nix.follows = "lbf/iohk-nix";
     ctl.follows = "lbf/ctl";
     plutarch.follows = "lbf/plutarch";
+    crane.url = "github:ipetkov/crane";
   };
 
   outputs = inputs@{ flake-parts, ... }:
@@ -30,6 +32,7 @@
         ./validation/demo-plutarch/build.nix
         ./validation/demo-plutustx/build.nix
         ./transactions/demo-ctl/build.nix
+        ./transactions/demo-rust/build.nix
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];

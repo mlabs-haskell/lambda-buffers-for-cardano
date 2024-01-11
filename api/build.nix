@@ -20,6 +20,12 @@
           files = [ "Demo/Plutus.lbf" ];
         };
 
+        lbf-demo-plutus-api-rust = inputs.lbf.lib."${system}".lbfPlutusRust {
+          name = "lbf-demo-plutus-api";
+          src = ./.;
+          files = [ "Demo/Plutus.lbf" ];
+        };
+
         lbf-demo-config-api-haskell = inputs.lbf.lib."${system}".lbfPreludeHaskell {
           name = "lbf-demo-config-api";
           src = ./.;
@@ -27,6 +33,12 @@
         };
 
         lbf-demo-config-api-purescript = inputs.lbf.lib."${system}".lbfPreludePurescript {
+          name = "lbf-demo-config-api";
+          src = ./.;
+          files = [ "Demo/Config.lbf" ];
+        };
+
+        lbf-demo-config-api-rust = inputs.lbf.lib."${system}".lbfPreludeRust {
           name = "lbf-demo-config-api";
           src = ./.;
           files = [ "Demo/Config.lbf" ];
