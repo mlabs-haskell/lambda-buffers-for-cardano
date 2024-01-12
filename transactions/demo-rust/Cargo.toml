@@ -14,3 +14,7 @@ plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-
 num-bigint = "0.4.4"
 num-integer = "0.1.45"
 linked-hash-map = "0.5.6"
+lbr-prelude = { path = ".extras/lbr-prelude" }
+
+[dev-dependencies]
+data-encoding = "2.5.0"

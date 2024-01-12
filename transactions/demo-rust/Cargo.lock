@@ -161,9 +161,11 @@ name = "demo-rust"
 version = "0.1.0"
 dependencies = [
  "cardano-serialization-lib",
+ "data-encoding",
  "lbf-demo-config-api",
  "lbf-demo-plutus-api",
  "lbf-prelude",
+ "lbr-prelude 0.1.0",
  "linked-hash-map",
  "num-bigint",
  "num-integer",
