@@ -19,6 +19,10 @@
     ctl.follows = "lbf/ctl";
     plutarch.follows = "lbf/plutarch";
     crane.url = "github:ipetkov/crane";
+
+    plutip.url = "github:mlabs-haskell/plutip";
+    cardano-node.follows = "plutip/cardano-node";
+    ogmios.url = "github:mlabs-haskell/ogmios-nixos";
   };
 
   outputs = inputs@{ flake-parts, ... }:

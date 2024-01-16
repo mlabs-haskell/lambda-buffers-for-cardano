@@ -14,14 +14,10 @@ const COINS_PER_UTXO_WORD: u64 = 34_482;
 /// Transaction that stores a EqDatum value at the Eq Validator.
 pub fn create_value_tx(
     network_id: u8,
-    own_pkh: &csl::crypto::Ed25519KeyHash,
     validator: &csl::plutus::PlutusScript,
     eq_datum: &EqDatum,
-    tx_inputs: &BTreeMap<&csl::TransactionInput, &csl::TransactionOutput>,
-) -> (
-    Result<csl::TransactionBody, csl::error::JsError>,
-    csl::TransactionOutput,
-) {
+    own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
+) -> Result<csl::TransactionBody, csl::error::JsError> {
     let validator_addr = EnterpriseAddress::new(
         network_id,
         &StakeCredential::from_scripthash(&validator.hash()),
@@ -31,9 +27,10 @@ pub fn create_value_tx(
     let datum = convert_plutus_data(eq_datum.to_plutus_data());
     let data_cost = csl::DataCost::new_coins_per_byte(&csl::utils::to_bignum(COINS_PER_UTXO_WORD));
 
-    let mut tx_inputs_builder = TxInputsBuilder::new();
-    tx_inputs.iter().for_each(|(tx_in, tx_out)| {
-        tx_inputs_builder.add_key_input(&own_pkh, &tx_in, &tx_out.amount());
+    let mut available_inputs = csl::utils::TransactionUnspentOutputs::new();
+    own_utxos.iter().for_each(|(tx_in, tx_out)| {
+        let utxo = csl::utils::TransactionUnspentOutput::new(&tx_in, &tx_out);
+        available_inputs.add(&utxo);
     });
 
     let tx_out = TransactionOutputBuilder::new()
@@ -47,17 +44,23 @@ pub fn create_value_tx(
         .unwrap();
 
     tx_builder.add_output(&tx_out).unwrap();
+    tx_builder.set_fee(&csl::utils::to_bignum(0));
+    tx_builder
+        .add_inputs_from(
+            &available_inputs,
+            csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
+        )
+        .unwrap();
 
-    tx_builder.set_inputs(&tx_inputs_builder);
-
-    (tx_builder.build(), tx_out)
+    tx_builder.build()
 }
 
 // `inputIsEqualTx eqValidator eqValidatorUtxos txIn eqDatum` make a transaction that checks if the EqDatum stored at the EqValidator's `txIn` is equal to the provided one in `eqDatum`.
 pub fn input_is_equal_tx(
     own_addr: &csl::address::Address,
+    own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     eq_validator: &csl::plutus::PlutusScript,
-    eq_validator_utxos: BTreeMap<&csl::TransactionInput, &csl::TransactionOutput>,
+    eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     tx_input: &csl::TransactionInput,
     eq_datum: &EqDatum,
 ) -> Result<csl::TransactionBody, csl::error::JsError> {
@@ -74,6 +77,12 @@ pub fn input_is_equal_tx(
     let tx_input_witness = PlutusWitness::new(eq_validator, &datum, &redeemer);
     tx_inputs_builder.add_plutus_script_input(&tx_input_witness, tx_input, &value);
 
+    let mut available_inputs = csl::utils::TransactionUnspentOutputs::new();
+    own_utxos.iter().for_each(|(tx_in, tx_out)| {
+        let utxo = csl::utils::TransactionUnspentOutput::new(&tx_in, &tx_out);
+        available_inputs.add(&utxo);
+    });
+
     tx_builder
         .add_output(
             &TransactionOutputBuilder::new()
@@ -88,6 +97,13 @@ pub fn input_is_equal_tx(
         .unwrap();
 
     tx_builder.set_inputs(&tx_inputs_builder);
+    tx_builder.set_fee(&csl::utils::to_bignum(0));
+    tx_builder
+        .add_inputs_from(
+            &available_inputs,
+            csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
+        )
+        .unwrap();
 
     tx_builder.build()
 }
@@ -95,8 +111,9 @@ pub fn input_is_equal_tx(
 /// `inputIsNotEqualTx eqValidator eqValidatorUtxos txIn eqDatum` make a transaction that checks if the EqDatum stored at the EqValidator's `txIn` is NOT equal to the provided one in `eqDatum`.
 pub fn input_is_not_equal_tx(
     own_addr: &csl::address::Address,
+    own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     eq_validator: &csl::plutus::PlutusScript,
-    eq_validator_utxos: BTreeMap<&csl::TransactionInput, &csl::TransactionOutput>,
+    eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     tx_input: &csl::TransactionInput,
     eq_datum: &EqDatum,
 ) -> Result<csl::TransactionBody, csl::error::JsError> {
@@ -113,6 +130,12 @@ pub fn input_is_not_equal_tx(
     let tx_input_witness = PlutusWitness::new(eq_validator, &datum, &redeemer);
     tx_inputs_builder.add_plutus_script_input(&tx_input_witness, tx_input, &value);
 
+    let mut available_inputs = csl::utils::TransactionUnspentOutputs::new();
+    own_utxos.iter().for_each(|(tx_in, tx_out)| {
+        let utxo = csl::utils::TransactionUnspentOutput::new(&tx_in, &tx_out);
+        available_inputs.add(&utxo);
+    });
+
     tx_builder
         .add_output(
             &TransactionOutputBuilder::new()
@@ -127,6 +150,13 @@ pub fn input_is_not_equal_tx(
         .unwrap();
 
     tx_builder.set_inputs(&tx_inputs_builder);
+    tx_builder.set_fee(&csl::utils::to_bignum(0));
+    tx_builder
+        .add_inputs_from(
+            &available_inputs,
+            csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
+        )
+        .unwrap();
 
     tx_builder.build()
 }

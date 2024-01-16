@@ -11,7 +11,12 @@
             pkgs.lib.optionals pkgs.stdenv.isDarwin
               [
                 pkgs.darwin.apple_sdk.frameworks.Security
+                pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
               ];
+          devShellTools = [
+            inputs'.plutip.packages."plutip-core:exe:local-cluster"
+            inputs'.ogmios.packages."ogmios:exe:ogmios"
+          ];
 
           extraSources = [
             # LB base schema and runtime libs
@@ -54,8 +59,8 @@
             }
 
           ];
-          devShellHook = config.settings.shell.hook;
 
+          devShellHook = config.settings.shell.hook;
         };
     in
     {

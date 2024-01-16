@@ -11,10 +11,19 @@ cardano-serialization-lib = "11.5.0"
 plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", features = [
   "lbf",
 ], rev = "d66d39c949f59e543c91ee36377c93422d8e9d75" }
-num-bigint = "0.4.4"
+num-bigint = { version = "0.4.4", features = ["serde"] }
 num-integer = "0.1.45"
 linked-hash-map = "0.5.6"
-lbr-prelude = { path = ".extras/lbr-prelude" }
+lbr-prelude = { path = ".extras/lbr-prelude", features = ["derive"] }
+serde_json = { version = "1.0.111", features = ["raw_value"] }
+serde = "1.0.195"
+derive_builder = "0.12.0"
+jsonrpsee-core = "0.21.0"
+jsonrpsee-http-client = "0.21.0"
+tokio-test = "0.4.3"
+tower = { version = "0.4.13", features = ["util"] }
+reqwest = { version = "0.11.23", features = ["json"] }
+uuid = { version = "1.6.1", features = ["v4"] }
 
 [dev-dependencies]
 data-encoding = "2.5.0"

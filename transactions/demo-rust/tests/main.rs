@@ -1,21 +1,22 @@
+mod utils;
+
 #[cfg(test)]
 mod tests {
+    use super::utils::ogmios::{Ogmios, OgmiosConfigBuilder};
+    use super::utils::plutip::{Plutip, PlutipConfigBuilder};
+    use super::utils::read_script;
     use cardano_serialization_lib::address::{EnterpriseAddress, StakeCredential};
-    use cardano_serialization_lib::crypto::{Ed25519KeyHash, TransactionHash};
+    use cardano_serialization_lib::crypto::TransactionHash;
     use cardano_serialization_lib::plutus::PlutusScript;
     use cardano_serialization_lib::TransactionInput;
-    use data_encoding::HEXLOWER;
     use demo_rust::{create_value_tx, input_is_equal_tx, input_is_not_equal_tx};
-    use lbf_demo_config_api::demo::config::{Config, Script};
     use lbf_demo_plutus_api::demo::plutus::{EqDatum, Product, Record, Sum};
-    use lbr_prelude::json::Json;
     use plutus_ledger_api::v2::address::{Address, Credential};
     use plutus_ledger_api::v2::crypto::LedgerBytes;
     use plutus_ledger_api::v2::script::ValidatorHash;
     use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash};
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
     use std::collections::BTreeMap;
-    use std::fs;
 
     #[test]
     fn test_it() {
@@ -63,64 +64,53 @@ mod tests {
             prod: Product(example_asset_class, example_address, example_plutus_bytes),
         };
 
-        eq_validator_test(&plutarch_script, &example_eq_datum_a, &example_eq_datum_b);
-        eq_validator_test(&plutustx_script, &example_eq_datum_a, &example_eq_datum_b);
-    }
-
-    fn read_script(path: &str) -> PlutusScript {
-        let conf_str = fs::read_to_string(path).expect(&format!(
-            "Couldn't read plutarch config JSON file at {}.",
-            path
+        tokio_test::block_on(eq_validator_test(
+            &plutarch_script,
+            &example_eq_datum_a,
+            &example_eq_datum_b,
         ));
-
-        let conf: Config = Json::from_json_string(&conf_str)
-            .expect(&format!("Couldn't deserialize JSON data of file {}", path));
-
-        let Script(raw_script) = conf.eq_validator;
-
-        PlutusScript::from_bytes(raw_script).expect(&format!(
-            "Couldn't deserialize PlutusScript of file {}.",
-            path
-        ))
+        tokio_test::block_on(eq_validator_test(
+            &plutustx_script,
+            &example_eq_datum_a,
+            &example_eq_datum_b,
+        ));
     }
 
-    fn parse_pkh(hex_str: &str) -> Ed25519KeyHash {
-        Ed25519KeyHash::from_bytes(HEXLOWER.decode(&hex_str.to_owned().into_bytes()).unwrap())
-            .unwrap()
-    }
-
-    fn eq_validator_test(
+    async fn eq_validator_test(
         eq_validator: &PlutusScript,
         example_eq_datum_a: &EqDatum,
         example_eq_datum_b: &EqDatum,
     ) {
-        // TODO: Actual network id
-        let network_id = 1;
-        // TODO: Query own pub key hash
-        let own_pkh = parse_pkh("0f45aaf1b2959db6e5ff94dbb1f823bf257680c3c723ac2d49f97546");
+        let plutip_config = PlutipConfigBuilder::default().build().unwrap();
+        let plutip = Plutip::start(&plutip_config);
+
+        let ogmios_config = OgmiosConfigBuilder::default()
+            .node_socket(plutip.get_node_socket())
+            .node_config(plutip.get_node_config_path())
+            .build()
+            .unwrap();
+        let ogmios = Ogmios::start(&ogmios_config);
+
+        let network_id = 0b0001;
+        let own_pkh = plutip.get_pkh();
         let own_addr = EnterpriseAddress::new(network_id, &StakeCredential::from_keyhash(&own_pkh))
             .to_address();
 
-        // TODO: Query tx inputs to be consumed
-        let tx_ins = BTreeMap::new();
+        let utxos = ogmios.query_utxos(&own_addr).await;
 
         // TODO: Submit this
-        let (_create_eq_datum_a_tx_body, eq_datum_a_tx_out) = create_value_tx(
-            network_id,
-            &own_pkh,
-            eq_validator,
-            example_eq_datum_a,
-            &tx_ins,
-        );
+        let create_eq_datum_a_tx_body =
+            create_value_tx(network_id, eq_validator, example_eq_datum_a, &utxos);
+
+        ogmios
+            .evaluate_transaction(&create_eq_datum_a_tx_body.unwrap())
+            .await;
+
+        let utxos = ogmios.query_utxos(&own_addr).await;
 
         // TODO: Submit this
-        let (_create_eq_datum_b_tx_body, eq_datum_b_tx_out) = create_value_tx(
-            network_id,
-            &own_pkh,
-            eq_validator,
-            example_eq_datum_b,
-            &tx_ins,
-        );
+        let _create_eq_datum_b_tx_body =
+            create_value_tx(network_id, eq_validator, example_eq_datum_b, &utxos);
 
         // TODO: This should be the UTxO we just created
         let tx_in_a = TransactionInput::new(
@@ -131,13 +121,20 @@ mod tests {
             0,
         );
 
-        // TODO: Query validator UTxOs
-        let eq_validator_utxos_a = BTreeMap::from([(&tx_in_a, &eq_datum_a_tx_out)]);
+        let validator_addr = EnterpriseAddress::new(
+            network_id,
+            &StakeCredential::from_scripthash(&eq_validator.hash()),
+        )
+        .to_address();
+
+        let eq_validator_utxos_a = ogmios.query_utxos(&validator_addr).await;
+        let utxos = ogmios.query_utxos(&own_addr).await;
 
         let _eq_datum_a_is_equal_tx = input_is_equal_tx(
             &own_addr,
+            &utxos,
             eq_validator,
-            eq_validator_utxos_a,
+            &eq_validator_utxos_a,
             &tx_in_a,
             example_eq_datum_a,
         );
@@ -151,13 +148,14 @@ mod tests {
             0,
         );
 
-        // TODO: Query validator UTxOs
-        let eq_validator_utxos_b = BTreeMap::from([(&tx_in_b, &eq_datum_b_tx_out)]);
+        let eq_validator_utxos_b = ogmios.query_utxos(&validator_addr).await;
+        let utxos = ogmios.query_utxos(&own_addr).await;
 
         let _eq_datum_a_is_equal_tx = input_is_not_equal_tx(
             &own_addr,
+            &utxos,
             eq_validator,
-            eq_validator_utxos_b,
+            &eq_validator_utxos_b,
             &tx_in_b,
             example_eq_datum_a,
         );
