@@ -1,12 +1,17 @@
+use cardano_serialization_lib::crypto::{PrivateKey, Vkeywitnesses};
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::plutus as csl;
-use cardano_serialization_lib::plutus::{ConstrPlutusData, ExUnitPrices, ExUnits};
+use cardano_serialization_lib::plutus::{
+    ConstrPlutusData, ExUnitPrices, ExUnits, PlutusScript, PlutusScripts,
+};
 use cardano_serialization_lib::tx_builder::{TransactionBuilder, TransactionBuilderConfigBuilder};
-use cardano_serialization_lib::utils::to_bignum;
-use cardano_serialization_lib::UnitInterval;
+use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness, to_bignum};
+use cardano_serialization_lib::{
+    Transaction, TransactionBody, TransactionWitnessSet, UnitInterval,
+};
 use plutus_ledger_api::plutus_data as pla;
 
-pub(crate) fn create_tx_builder() -> TransactionBuilder {
+pub fn create_tx_builder() -> TransactionBuilder {
     let linear_fee = &LinearFee::new(&to_bignum(44), &to_bignum(155381));
 
     let cfg = TransactionBuilderConfigBuilder::new()
@@ -25,7 +30,7 @@ pub(crate) fn create_tx_builder() -> TransactionBuilder {
     TransactionBuilder::new(&cfg)
 }
 
-pub(crate) fn convert_plutus_data(pla_plutus_data: pla::PlutusData) -> csl::PlutusData {
+pub fn convert_plutus_data(pla_plutus_data: pla::PlutusData) -> csl::PlutusData {
     match pla_plutus_data {
         pla::PlutusData::Constr(i, d) => {
             csl::PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
@@ -52,7 +57,28 @@ pub(crate) fn convert_plutus_data(pla_plutus_data: pla::PlutusData) -> csl::Plut
     }
 }
 
-pub(crate) fn to_redeemer(plutus_data: csl::PlutusData) -> csl::Redeemer {
+pub fn sign_transaction(
+    tx_body: &TransactionBody,
+    priv_key: &PrivateKey,
+    plutus_scripts: Vec<&PlutusScript>,
+) -> Transaction {
+    let mut witness_set = TransactionWitnessSet::new();
+    let mut vkey_witnesses = Vkeywitnesses::new();
+    vkey_witnesses.add(&make_vkey_witness(&hash_transaction(tx_body), priv_key));
+
+    let mut script_witnesses = PlutusScripts::new();
+
+    plutus_scripts
+        .iter()
+        .for_each(|script| script_witnesses.add(script));
+
+    witness_set.set_vkeys(&vkey_witnesses);
+    witness_set.set_plutus_scripts(&script_witnesses);
+
+    Transaction::new(&tx_body, &witness_set, None)
+}
+
+pub fn to_redeemer(plutus_data: csl::PlutusData) -> csl::Redeemer {
     csl::Redeemer::new(
         &csl::RedeemerTag::new_spend(),
         &to_bignum(0),

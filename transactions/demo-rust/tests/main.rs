@@ -16,7 +16,6 @@ mod tests {
     use plutus_ledger_api::v2::script::ValidatorHash;
     use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash};
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
-    use std::collections::BTreeMap;
 
     #[test]
     fn test_it() {
@@ -81,6 +80,139 @@ mod tests {
         example_eq_datum_a: &EqDatum,
         example_eq_datum_b: &EqDatum,
     ) {
+        let (plutip, ogmios) = setup_plutip_test().await;
+
+        let tx_hash_a =
+            create_value_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_a).await;
+
+        // TODO await confirmation
+        std::thread::sleep(std::time::Duration::from_secs(30));
+
+        let tx_hash_b =
+            create_value_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_b).await;
+
+        // TODO await confirmation
+        std::thread::sleep(std::time::Duration::from_secs(30));
+
+        // TODO: This should be the UTxO we just created
+        let tx_in_a = TransactionInput::new(&tx_hash_a, 0);
+
+        is_eq_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_a, &tx_in_a).await;
+
+        // TODO await confirmation
+        std::thread::sleep(std::time::Duration::from_secs(30));
+
+        // TODO: This should be the UTxO we just created
+        let tx_in_b = TransactionInput::new(&tx_hash_b, 0);
+
+        is_not_eq_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_a, &tx_in_b)
+            .await;
+    }
+
+    async fn create_value_build_and_submit(
+        plutip: &Plutip,
+        ogmios: &Ogmios,
+        eq_validator: &PlutusScript,
+        example_eq_datum: &EqDatum,
+    ) -> TransactionHash {
+        let utxos = ogmios.query_utxos(&plutip.get_own_addr()).await;
+
+        let eq_validator_addr = EnterpriseAddress::new(
+            plutip.get_network_id(),
+            &StakeCredential::from_scripthash(&eq_validator.hash()),
+        )
+        .to_address();
+
+        let create_eq_datum_a_tx_builder = create_value_tx(
+            &plutip.get_own_pkh(),
+            &eq_validator_addr,
+            example_eq_datum,
+            &utxos,
+        );
+
+        ogmios
+            .balance_sign_and_submit_transacton(
+                create_eq_datum_a_tx_builder,
+                &plutip.get_priv_key(),
+                &plutip.get_own_addr(),
+                Vec::new(),
+            )
+            .await
+    }
+
+    async fn is_eq_build_and_submit(
+        plutip: &Plutip,
+        ogmios: &Ogmios,
+        eq_validator: &PlutusScript,
+        example_eq_datum: &EqDatum,
+        tx_in: &TransactionInput,
+    ) -> TransactionHash {
+        let validator_addr = EnterpriseAddress::new(
+            plutip.get_network_id(),
+            &StakeCredential::from_scripthash(&eq_validator.hash()),
+        )
+        .to_address();
+
+        let eq_validator_utxos_a = ogmios.query_utxos(&validator_addr).await;
+        let utxos = ogmios.query_utxos(&plutip.get_own_addr()).await;
+
+        let eq_datum_a_is_equal_tx = input_is_equal_tx(
+            &plutip.get_own_pkh(),
+            &plutip.get_own_addr(),
+            &utxos,
+            eq_validator,
+            &eq_validator_utxos_a,
+            &tx_in,
+            example_eq_datum,
+        );
+
+        ogmios
+            .balance_sign_and_submit_transacton(
+                eq_datum_a_is_equal_tx,
+                &plutip.get_priv_key(),
+                &plutip.get_own_addr(),
+                vec![eq_validator],
+            )
+            .await
+    }
+
+    async fn is_not_eq_build_and_submit(
+        plutip: &Plutip,
+        ogmios: &Ogmios,
+        eq_validator: &PlutusScript,
+        example_eq_datum: &EqDatum,
+        tx_in: &TransactionInput,
+    ) -> TransactionHash {
+        let validator_addr = EnterpriseAddress::new(
+            plutip.get_network_id(),
+            &StakeCredential::from_scripthash(&eq_validator.hash()),
+        )
+        .to_address();
+
+        let eq_validator_utxos_b = ogmios.query_utxos(&validator_addr).await;
+        let utxos = ogmios.query_utxos(&plutip.get_own_addr()).await;
+
+        let eq_datum_b_is_not_equal_tx = input_is_not_equal_tx(
+            &plutip.get_own_pkh(),
+            &plutip.get_own_addr(),
+            &utxos,
+            eq_validator,
+            &eq_validator_utxos_b,
+            &tx_in,
+            example_eq_datum,
+        );
+
+        ogmios
+            .balance_sign_and_submit_transacton(
+                eq_datum_b_is_not_equal_tx,
+                &plutip.get_priv_key(),
+                &plutip.get_own_addr(),
+                vec![eq_validator],
+            )
+            .await
+    }
+
+    async fn setup_plutip_test() -> (Plutip, Ogmios) {
         let plutip_config = PlutipConfigBuilder::default().build().unwrap();
         let plutip = Plutip::start(&plutip_config);
 
@@ -91,73 +223,6 @@ mod tests {
             .unwrap();
         let ogmios = Ogmios::start(&ogmios_config);
 
-        let network_id = 0b0001;
-        let own_pkh = plutip.get_pkh();
-        let own_addr = EnterpriseAddress::new(network_id, &StakeCredential::from_keyhash(&own_pkh))
-            .to_address();
-
-        let utxos = ogmios.query_utxos(&own_addr).await;
-
-        // TODO: Submit this
-        let create_eq_datum_a_tx_body =
-            create_value_tx(network_id, eq_validator, example_eq_datum_a, &utxos);
-
-        ogmios
-            .evaluate_transaction(&create_eq_datum_a_tx_body.unwrap())
-            .await;
-
-        let utxos = ogmios.query_utxos(&own_addr).await;
-
-        // TODO: Submit this
-        let _create_eq_datum_b_tx_body =
-            create_value_tx(network_id, eq_validator, example_eq_datum_b, &utxos);
-
-        // TODO: This should be the UTxO we just created
-        let tx_in_a = TransactionInput::new(
-            &TransactionHash::from_hex(
-                "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
-            )
-            .unwrap(),
-            0,
-        );
-
-        let validator_addr = EnterpriseAddress::new(
-            network_id,
-            &StakeCredential::from_scripthash(&eq_validator.hash()),
-        )
-        .to_address();
-
-        let eq_validator_utxos_a = ogmios.query_utxos(&validator_addr).await;
-        let utxos = ogmios.query_utxos(&own_addr).await;
-
-        let _eq_datum_a_is_equal_tx = input_is_equal_tx(
-            &own_addr,
-            &utxos,
-            eq_validator,
-            &eq_validator_utxos_a,
-            &tx_in_a,
-            example_eq_datum_a,
-        );
-
-        // TODO: This should be the UTxO we just created
-        let tx_in_b = TransactionInput::new(
-            &TransactionHash::from_hex(
-                "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
-            )
-            .unwrap(),
-            0,
-        );
-
-        let eq_validator_utxos_b = ogmios.query_utxos(&validator_addr).await;
-        let utxos = ogmios.query_utxos(&own_addr).await;
-
-        let _eq_datum_a_is_equal_tx = input_is_not_equal_tx(
-            &own_addr,
-            &utxos,
-            eq_validator,
-            &eq_validator_utxos_b,
-            &tx_in_b,
-            example_eq_datum_a,
-        );
+        (plutip, ogmios)
     }
 }

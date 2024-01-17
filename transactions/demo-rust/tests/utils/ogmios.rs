@@ -1,6 +1,7 @@
 use cardano_serialization_lib as csl;
 use cardano_serialization_lib::address::Address;
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
+use demo_rust::utils::sign_transaction;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
@@ -53,7 +54,7 @@ impl Ogmios {
         };
 
         let resp: QueryLedgerStateUtxoResponse =
-            self.request("queryLedgerState/utxo", params).await;
+            self.request("queryLedgerState/utxo", params).await.unwrap();
 
         resp.iter()
             .map(|utxo| {
@@ -65,19 +66,65 @@ impl Ogmios {
             .collect()
     }
 
-    pub async fn evaluate_transaction(&self, tx_body: &csl::TransactionBody) {
-        let tx = csl::Transaction::new(tx_body, &csl::TransactionWitnessSet::new(), None);
+    pub async fn evaluate_transaction(
+        &self,
+        tx_builder: &csl::tx_builder::TransactionBuilder,
+    ) -> csl::plutus::ExUnits {
+        let mut tx_builder = tx_builder.clone();
+
+        tx_builder.set_fee(&csl::utils::to_bignum(0));
+
+        let tx = tx_builder.build_tx().unwrap();
         let params = EvaluateTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
         };
 
-        let resp: EvaluateTransactionResponse = self.request("evaluateTransaction", params).await;
+        let resp: EvaluateTransactionResponse =
+            self.request("evaluateTransaction", params).await.unwrap();
 
-        ()
+        let (mem, cpu) = resp.into_iter().fold((0, 0), |(mem, cpu), budgets| {
+            (mem + budgets.budget.memory, cpu + budgets.budget.cpu)
+        });
+        csl::plutus::ExUnits::new(&csl::utils::to_bignum(mem), &csl::utils::to_bignum(cpu))
     }
 
-    async fn request<T, U>(&self, method: &str, params: T) -> U
+    pub async fn balance_transaction(
+        &self,
+        mut tx_builder: csl::tx_builder::TransactionBuilder,
+        own_addr: &csl::address::Address,
+    ) -> csl::TransactionBody {
+        let _ = tx_builder.add_change_if_needed(own_addr);
+        tx_builder.build().unwrap()
+    }
+
+    pub async fn submit_transaction(&self, tx: &csl::Transaction) -> csl::crypto::TransactionHash {
+        let params = SubmitTransactionParams {
+            transaction: TransactionCbor { cbor: tx.to_hex() },
+            additional_utxo: Vec::new(),
+        };
+
+        let resp: SubmitTransactionResponse =
+            self.request("submitTransaction", params).await.unwrap();
+
+        csl::crypto::TransactionHash::from_hex(&resp.transaction.id).unwrap()
+    }
+
+    pub async fn balance_sign_and_submit_transacton(
+        &self,
+        tx_builder: csl::tx_builder::TransactionBuilder,
+        priv_key: &csl::crypto::PrivateKey,
+        own_addr: &csl::address::Address,
+        plutus_scripts: Vec<&csl::plutus::PlutusScript>,
+    ) -> csl::crypto::TransactionHash {
+        let tx_body = self.balance_transaction(tx_builder, own_addr).await;
+
+        let tx = sign_transaction(&tx_body, priv_key, plutus_scripts);
+
+        self.submit_transaction(&tx).await
+    }
+
+    async fn request<T, U>(&self, method: &str, params: T) -> Result<U, JsonRPCError>
     where
         T: Serialize,
         U: serde::de::DeserializeOwned + Serialize,
@@ -98,7 +145,10 @@ impl Ogmios {
             .await
             .unwrap();
 
-        resp.result
+        match resp {
+            JsonRPCResponse::Success { result, .. } => Ok(result),
+            JsonRPCResponse::Error { error, .. } => Err(error),
+        }
     }
 }
 
@@ -124,7 +174,7 @@ pub struct OgmiosConfig {
     _max_in_flight: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct QueryLedgerStateUtxoParams {
     addresses: Vec<String>,
 }
@@ -205,33 +255,33 @@ impl TryFrom<&Utxo> for csl::TransactionOutput {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize, Deserialize)]
 struct EvaluateTransactionParams {
     transaction: TransactionCbor,
     #[serde(rename(deserialize = "additionalUtxo"))]
     additional_utxo: Vec<Utxo>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize, Deserialize)]
 struct TransactionCbor {
     cbor: String,
 }
 
 type EvaluateTransactionResponse = Vec<Budgets>;
 
-#[derive(Deserialize, Serialize)]
-struct Budgets {
-    validator: String,
-    budget: Budget,
+#[derive(Serialize, Deserialize)]
+pub struct Budgets {
+    pub validator: String,
+    pub budget: Budget,
 }
 
-#[derive(Deserialize, Serialize)]
-struct Budget {
-    memory: u64,
-    cpu: u64,
+#[derive(Serialize, Deserialize)]
+pub struct Budget {
+    pub memory: u64,
+    pub cpu: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct JsonRPCRequest<T: Serialize> {
     jsonrpc: String,
     method: String,
@@ -250,10 +300,33 @@ impl<T: Serialize> JsonRPCRequest<T> {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-struct JsonRPCResponse<T: Serialize> {
-    jsonrpc: String,
-    method: String,
-    result: T,
-    id: String,
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+enum JsonRPCResponse<T: Serialize> {
+    Success {
+        jsonrpc: String,
+        method: String,
+        result: T,
+        id: String,
+    },
+    Error {
+        jsonrpc: String,
+        method: String,
+        error: JsonRPCError,
+        id: String,
+    },
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct JsonRPCError {
+    code: i16,
+    message: String,
+    // data: Option<Box<RawValue>>, // TODO
+}
+
+type SubmitTransactionParams = EvaluateTransactionParams;
+
+#[derive(Serialize, Deserialize)]
+pub struct SubmitTransactionResponse {
+    transaction: TransactionId,
 }

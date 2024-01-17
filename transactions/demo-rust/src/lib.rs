@@ -1,28 +1,23 @@
 use crate::utils::{convert_plutus_data, create_tx_builder, to_redeemer};
 use cardano_serialization_lib as csl;
-use cardano_serialization_lib::address::{EnterpriseAddress, StakeCredential};
+use cardano_serialization_lib::crypto::Ed25519KeyHash;
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
 use cardano_serialization_lib::tx_builder::tx_inputs_builder::{PlutusWitness, TxInputsBuilder};
 use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer};
 use plutus_ledger_api::plutus_data::IsPlutusData;
 use std::collections::BTreeMap;
 
-mod utils;
+pub mod utils;
 
 const COINS_PER_UTXO_WORD: u64 = 34_482;
 
 /// Transaction that stores a EqDatum value at the Eq Validator.
 pub fn create_value_tx(
-    network_id: u8,
-    validator: &csl::plutus::PlutusScript,
+    own_pkh: &Ed25519KeyHash,
+    validator_addr: &csl::address::Address,
     eq_datum: &EqDatum,
     own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
-) -> Result<csl::TransactionBody, csl::error::JsError> {
-    let validator_addr = EnterpriseAddress::new(
-        network_id,
-        &StakeCredential::from_scripthash(&validator.hash()),
-    )
-    .to_address();
+) -> csl::tx_builder::TransactionBuilder {
     let mut tx_builder = create_tx_builder();
     let datum = convert_plutus_data(eq_datum.to_plutus_data());
     let data_cost = csl::DataCost::new_coins_per_byte(&csl::utils::to_bignum(COINS_PER_UTXO_WORD));
@@ -44,26 +39,27 @@ pub fn create_value_tx(
         .unwrap();
 
     tx_builder.add_output(&tx_out).unwrap();
-    tx_builder.set_fee(&csl::utils::to_bignum(0));
     tx_builder
         .add_inputs_from(
             &available_inputs,
             csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
         )
         .unwrap();
+    tx_builder.add_required_signer(own_pkh);
 
-    tx_builder.build()
+    tx_builder
 }
 
 // `inputIsEqualTx eqValidator eqValidatorUtxos txIn eqDatum` make a transaction that checks if the EqDatum stored at the EqValidator's `txIn` is equal to the provided one in `eqDatum`.
 pub fn input_is_equal_tx(
+    own_pkh: &Ed25519KeyHash,
     own_addr: &csl::address::Address,
     own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     eq_validator: &csl::plutus::PlutusScript,
     eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     tx_input: &csl::TransactionInput,
     eq_datum: &EqDatum,
-) -> Result<csl::TransactionBody, csl::error::JsError> {
+) -> csl::tx_builder::TransactionBuilder {
     let mut tx_builder = create_tx_builder();
     let datum = convert_plutus_data(eq_datum.to_plutus_data());
 
@@ -97,26 +93,27 @@ pub fn input_is_equal_tx(
         .unwrap();
 
     tx_builder.set_inputs(&tx_inputs_builder);
-    tx_builder.set_fee(&csl::utils::to_bignum(0));
     tx_builder
         .add_inputs_from(
             &available_inputs,
             csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
         )
         .unwrap();
+    tx_builder.add_required_signer(own_pkh);
 
-    tx_builder.build()
+    tx_builder
 }
 
 /// `inputIsNotEqualTx eqValidator eqValidatorUtxos txIn eqDatum` make a transaction that checks if the EqDatum stored at the EqValidator's `txIn` is NOT equal to the provided one in `eqDatum`.
 pub fn input_is_not_equal_tx(
+    own_pkh: &Ed25519KeyHash,
     own_addr: &csl::address::Address,
     own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     eq_validator: &csl::plutus::PlutusScript,
     eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     tx_input: &csl::TransactionInput,
     eq_datum: &EqDatum,
-) -> Result<csl::TransactionBody, csl::error::JsError> {
+) -> csl::tx_builder::TransactionBuilder {
     let mut tx_builder = create_tx_builder();
     let datum = convert_plutus_data(eq_datum.to_plutus_data());
 
@@ -150,13 +147,13 @@ pub fn input_is_not_equal_tx(
         .unwrap();
 
     tx_builder.set_inputs(&tx_inputs_builder);
-    tx_builder.set_fee(&csl::utils::to_bignum(0));
     tx_builder
         .add_inputs_from(
             &available_inputs,
             csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
         )
         .unwrap();
+    tx_builder.add_required_signer(own_pkh);
 
-    tx_builder.build()
+    tx_builder
 }
