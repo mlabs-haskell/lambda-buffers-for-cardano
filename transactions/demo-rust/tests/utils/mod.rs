@@ -19,7 +19,11 @@ pub(crate) fn read_script(path: &str) -> PlutusScript {
 
     let Script(raw_script) = conf.eq_validator;
 
-    PlutusScript::from_bytes(raw_script).expect(&format!(
+    let mut serializer = cbor_event::se::Serializer::new_vec();
+    serializer.write_bytes(raw_script).unwrap();
+    let script = serializer.finalize();
+
+    PlutusScript::from_bytes_v2(script).expect(&format!(
         "Couldn't deserialize PlutusScript of file {}.",
         path
     ))

@@ -1,13 +1,13 @@
 use cardano_serialization_lib as csl;
 use cardano_serialization_lib::address::Address;
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
-use demo_rust::utils::sign_transaction;
+use demo_rust::utils::{sign_transaction, to_int, to_redeemer};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
+use serde_json::value::Value as JsonValue;
 use std::collections::BTreeMap;
 use std::process::{Child, Command};
-use std::{thread, time};
+use std::time;
 use uuid::Uuid;
 
 pub struct Ogmios {
@@ -17,7 +17,7 @@ pub struct Ogmios {
 }
 
 impl Ogmios {
-    pub fn start(config: &OgmiosConfig) -> Self {
+    pub async fn start(config: &OgmiosConfig) -> Self {
         let args = [
             "--node-socket",
             &config.node_socket,
@@ -32,7 +32,8 @@ impl Ogmios {
 
         let client = reqwest::Client::new();
 
-        thread::sleep(time::Duration::from_secs(5));
+        // TODO This is less than ideal, we should do a proper healthcheck
+        tokio::time::sleep(time::Duration::from_secs(5)).await;
         Self {
             handler,
             config: config.clone(),
@@ -53,8 +54,10 @@ impl Ogmios {
             addresses: vec![addr.to_string()],
         };
 
-        let resp: QueryLedgerStateUtxoResponse =
-            self.request("queryLedgerState/utxo", params).await.unwrap();
+        let resp: QueryLedgerStateUtxoResponse = self
+            .request("queryLedgerState/utxo", Some(params))
+            .await
+            .unwrap();
 
         resp.iter()
             .map(|utxo| {
@@ -66,22 +69,80 @@ impl Ogmios {
             .collect()
     }
 
+    pub async fn query_costmdls(&self) -> csl::plutus::Costmdls {
+        let resp = self
+            .request::<(), QueryLedgerStateProtocolParametersResponse>(
+                "queryLedgerState/protocolParameters",
+                None,
+            )
+            .await
+            .unwrap();
+
+        let mut costmdls = csl::plutus::Costmdls::new();
+
+        let mut plutus_v1 = csl::plutus::CostModel::new();
+        let mut plutus_v2 = csl::plutus::CostModel::new();
+
+        resp.plutus_cost_models
+            .get("plutus:v1")
+            .unwrap()
+            .iter()
+            .enumerate()
+            .for_each(|(index, model)| {
+                let _ = plutus_v1.set(index, &to_int(*model));
+            });
+        resp.plutus_cost_models
+            .get("plutus:v1")
+            .unwrap()
+            .iter()
+            .enumerate()
+            .for_each(|(index, model)| {
+                let _ = plutus_v2.set(index, &to_int(*model));
+            });
+        costmdls.insert(&csl::plutus::Language::new_plutus_v1(), &plutus_v1);
+        costmdls.insert(&csl::plutus::Language::new_plutus_v2(), &plutus_v2);
+        costmdls
+    }
+
     pub async fn evaluate_transaction(
         &self,
         tx_builder: &csl::tx_builder::TransactionBuilder,
+        plutus_scripts: Vec<&csl::plutus::PlutusScript>,
+        redeemers: Vec<&csl::plutus::PlutusData>,
     ) -> csl::plutus::ExUnits {
         let mut tx_builder = tx_builder.clone();
 
         tx_builder.set_fee(&csl::utils::to_bignum(0));
 
-        let tx = tx_builder.build_tx().unwrap();
+        let mut witness_set = csl::TransactionWitnessSet::new();
+
+        let mut script_witnesses = csl::plutus::PlutusScripts::new();
+
+        plutus_scripts
+            .iter()
+            .for_each(|script| script_witnesses.add(script));
+
+        let mut redeemer_witnesses = csl::plutus::Redeemers::new();
+
+        redeemers
+            .iter()
+            .for_each(|redeemer| redeemer_witnesses.add(&to_redeemer(redeemer)));
+
+        witness_set.set_plutus_scripts(&script_witnesses);
+        witness_set.set_redeemers(&redeemer_witnesses);
+
+        let tx_body = tx_builder.build().unwrap();
+        let tx = csl::Transaction::new(&tx_body, &witness_set, None);
+
         let params = EvaluateTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
         };
 
-        let resp: EvaluateTransactionResponse =
-            self.request("evaluateTransaction", params).await.unwrap();
+        let resp: EvaluateTransactionResponse = self
+            .request("evaluateTransaction", Some(params))
+            .await
+            .unwrap();
 
         let (mem, cpu) = resp.into_iter().fold((0, 0), |(mem, cpu), budgets| {
             (mem + budgets.budget.memory, cpu + budgets.budget.cpu)
@@ -93,8 +154,10 @@ impl Ogmios {
         &self,
         mut tx_builder: csl::tx_builder::TransactionBuilder,
         own_addr: &csl::address::Address,
+        cost_models: &csl::plutus::Costmdls,
     ) -> csl::TransactionBody {
         let _ = tx_builder.add_change_if_needed(own_addr);
+        tx_builder.calc_script_data_hash(&cost_models);
         tx_builder.build().unwrap()
     }
 
@@ -104,8 +167,10 @@ impl Ogmios {
             additional_utxo: Vec::new(),
         };
 
-        let resp: SubmitTransactionResponse =
-            self.request("submitTransaction", params).await.unwrap();
+        let resp: SubmitTransactionResponse = self
+            .request("submitTransaction", Some(params))
+            .await
+            .unwrap();
 
         csl::crypto::TransactionHash::from_hex(&resp.transaction.id).unwrap()
     }
@@ -116,15 +181,19 @@ impl Ogmios {
         priv_key: &csl::crypto::PrivateKey,
         own_addr: &csl::address::Address,
         plutus_scripts: Vec<&csl::plutus::PlutusScript>,
+        redeemers: Vec<&csl::plutus::Redeemer>,
+        cost_models: &csl::plutus::Costmdls,
     ) -> csl::crypto::TransactionHash {
-        let tx_body = self.balance_transaction(tx_builder, own_addr).await;
+        let tx_body = self
+            .balance_transaction(tx_builder, own_addr, cost_models)
+            .await;
 
-        let tx = sign_transaction(&tx_body, priv_key, plutus_scripts);
+        let tx = sign_transaction(&tx_body, priv_key, plutus_scripts, redeemers);
 
         self.submit_transaction(&tx).await
     }
 
-    async fn request<T, U>(&self, method: &str, params: T) -> Result<U, JsonRPCError>
+    async fn request<T, U>(&self, method: &str, params: Option<T>) -> Result<U, JsonRPCError>
     where
         T: Serialize,
         U: serde::de::DeserializeOwned + Serialize,
@@ -209,7 +278,7 @@ enum Script {
 #[derive(Serialize, Deserialize)]
 struct NativeScript {
     language: String,
-    json: Box<RawValue>,
+    json: JsonValue,
     cbor: String,
 }
 
@@ -285,12 +354,12 @@ pub struct Budget {
 struct JsonRPCRequest<T: Serialize> {
     jsonrpc: String,
     method: String,
-    params: T,
+    params: Option<T>,
     id: String,
 }
 
 impl<T: Serialize> JsonRPCRequest<T> {
-    pub fn new(method: &str, params: T) -> Self {
+    pub fn new(method: &str, params: Option<T>) -> Self {
         Self {
             jsonrpc: "2.0".to_owned(),
             method: method.to_owned(),
@@ -321,7 +390,7 @@ enum JsonRPCResponse<T: Serialize> {
 struct JsonRPCError {
     code: i16,
     message: String,
-    // data: Option<Box<RawValue>>, // TODO
+    data: Option<JsonValue>, // TODO
 }
 
 type SubmitTransactionParams = EvaluateTransactionParams;
@@ -329,4 +398,11 @@ type SubmitTransactionParams = EvaluateTransactionParams;
 #[derive(Serialize, Deserialize)]
 pub struct SubmitTransactionResponse {
     transaction: TransactionId,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct QueryLedgerStateProtocolParametersResponse {
+    #[serde(rename(deserialize = "plutusCostModels"))]
+    plutus_cost_models: BTreeMap<String, Vec<i64>>,
+    // TODO: Rest of the params was not needed yet
 }

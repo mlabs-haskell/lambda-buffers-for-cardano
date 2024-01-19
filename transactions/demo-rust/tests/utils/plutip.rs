@@ -4,8 +4,9 @@ use cardano_serialization_lib::crypto::{Ed25519KeyHash, PrivateKey};
 use data_encoding::HEXLOWER;
 use derive_builder::Builder;
 use std::fs;
+use std::io::Cursor;
 use std::process::{Child, Command};
-use std::{thread, time};
+use std::{time};
 
 #[derive(Builder, Clone)]
 pub struct PlutipConfig {
@@ -53,7 +54,7 @@ pub struct Plutip {
 impl Plutip {
     const NETWORK_ID: u8 = 0b0001;
 
-    pub fn start(config: &PlutipConfig) -> Self {
+    pub async fn start(config: &PlutipConfig) -> Self {
         let args = [
             "--dump-info-json",
             &config.dump_path,
@@ -66,7 +67,8 @@ impl Plutip {
             .spawn()
             .expect("failed to execute plutip");
 
-        thread::sleep(time::Duration::from_secs(5));
+        // TODO This is less than ideal, we should do a proper healthcheck
+        tokio::time::sleep(time::Duration::from_secs(5)).await;
         let info = Self::fetch_info(&config.dump_path);
         Self {
             handler,
@@ -95,12 +97,14 @@ impl Plutip {
         let text_envelope: TextEnvelope = serde_json::from_str(&skey_str)
             .expect(&format!("Couldn't deserialize JSON data of file {}", &path));
 
-        PrivateKey::from_normal_bytes(
-            &HEXLOWER
-                .decode(&text_envelope.cbor_hex[4..].to_owned().into_bytes())
+        let mut raw = cbor_event::de::Deserializer::from(Cursor::new(
+            HEXLOWER
+                .decode(&text_envelope.cbor_hex.clone().into_bytes())
                 .unwrap(),
-        )
-        .unwrap()
+        ));
+        let bytes: Vec<u8> = raw.bytes().unwrap();
+
+        PrivateKey::from_normal_bytes(&bytes).unwrap()
     }
 
     pub fn get_own_pkh(&self) -> Ed25519KeyHash {

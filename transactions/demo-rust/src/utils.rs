@@ -2,17 +2,17 @@ use cardano_serialization_lib::crypto::{PrivateKey, Vkeywitnesses};
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::plutus as csl;
 use cardano_serialization_lib::plutus::{
-    ConstrPlutusData, ExUnitPrices, ExUnits, PlutusScript, PlutusScripts,
+    ConstrPlutusData, ExUnitPrices, ExUnits, PlutusScript, PlutusScripts, Redeemer, Redeemers,
 };
 use cardano_serialization_lib::tx_builder::{TransactionBuilder, TransactionBuilderConfigBuilder};
-use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness, to_bignum};
+use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness, to_bignum, Int};
 use cardano_serialization_lib::{
     Transaction, TransactionBody, TransactionWitnessSet, UnitInterval,
 };
 use plutus_ledger_api::plutus_data as pla;
 
 pub fn create_tx_builder() -> TransactionBuilder {
-    let linear_fee = &LinearFee::new(&to_bignum(44), &to_bignum(155381));
+    let linear_fee = &LinearFee::new(&to_bignum(100), &to_bignum(100_000));
 
     let cfg = TransactionBuilderConfigBuilder::new()
         .fee_algo(linear_fee)
@@ -22,13 +22,24 @@ pub fn create_tx_builder() -> TransactionBuilder {
         .max_tx_size(8000)
         .coins_per_utxo_byte(&to_bignum(34_482))
         .ex_unit_prices(&ExUnitPrices::new(
-            &UnitInterval::new(&to_bignum(577), &to_bignum(10000)),
-            &UnitInterval::new(&to_bignum(721), &to_bignum(10000000)),
+            &UnitInterval::new(&to_bignum(577), &to_bignum(10_000)),
+            &UnitInterval::new(&to_bignum(721), &to_bignum(10_000_000)),
         ))
         .build()
         .unwrap();
     TransactionBuilder::new(&cfg)
 }
+
+// let cfg = TransactionBuilderConfigBuilder::new()
+//     .fee_algo(linear_fee)
+//     .pool_deposit(&to_bignum(1000000))
+//     .key_deposit(&to_bignum(0))
+//     .max_value_size(5000)
+//     .max_tx_size(16384)
+//     .coins_per_utxo_byte(&to_bignum(4310))
+//     .ex_unit_prices(&ExUnitPrices::new(
+//         &UnitInterval::new(&to_bignum(577), &to_bignum(10_000)),
+//         &UnitInterval::new(&to_bignum(721), &to_bignum(10_000_000)),
 
 pub fn convert_plutus_data(pla_plutus_data: pla::PlutusData) -> csl::PlutusData {
     match pla_plutus_data {
@@ -61,6 +72,7 @@ pub fn sign_transaction(
     tx_body: &TransactionBody,
     priv_key: &PrivateKey,
     plutus_scripts: Vec<&PlutusScript>,
+    redeemers: Vec<&Redeemer>,
 ) -> Transaction {
     let mut witness_set = TransactionWitnessSet::new();
     let mut vkey_witnesses = Vkeywitnesses::new();
@@ -72,17 +84,32 @@ pub fn sign_transaction(
         .iter()
         .for_each(|script| script_witnesses.add(script));
 
+    let mut redeemer_witnesses = Redeemers::new();
+
+    redeemers
+        .iter()
+        .for_each(|redeemer| redeemer_witnesses.add(redeemer));
+
     witness_set.set_vkeys(&vkey_witnesses);
     witness_set.set_plutus_scripts(&script_witnesses);
+    witness_set.set_redeemers(&redeemer_witnesses);
 
     Transaction::new(&tx_body, &witness_set, None)
 }
 
-pub fn to_redeemer(plutus_data: csl::PlutusData) -> csl::Redeemer {
+pub fn to_redeemer(plutus_data: &csl::PlutusData) -> csl::Redeemer {
     csl::Redeemer::new(
         &csl::RedeemerTag::new_spend(),
         &to_bignum(0),
         &plutus_data,
         &ExUnits::new(&to_bignum(1), &to_bignum(2)),
     )
+}
+
+pub fn to_int(int: i64) -> Int {
+    if int >= 0 {
+        Int::new(&to_bignum(int as u64))
+    } else {
+        Int::new_negative(&to_bignum((int * -1) as u64))
+    }
 }

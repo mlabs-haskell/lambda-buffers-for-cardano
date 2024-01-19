@@ -302,6 +302,7 @@ name = "demo-rust"
 version = "0.1.0"
 dependencies = [
  "cardano-serialization-lib",
+ "cbor_event",
  "data-encoding",
  "derive_builder",
  "jsonrpsee-core",
@@ -317,6 +318,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
  "tokio-test",
  "tower",
  "uuid",

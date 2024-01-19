@@ -50,7 +50,7 @@ pub fn create_value_tx(
     tx_builder
 }
 
-// `inputIsEqualTx eqValidator eqValidatorUtxos txIn eqDatum` make a transaction that checks if the EqDatum stored at the EqValidator's `txIn` is equal to the provided one in `eqDatum`.
+// Make a transaction that checks if the `EqDatum` stored at the `EqValidator`'s `tx_input` is equal to the provided one in `eq_datum`.
 pub fn input_is_equal_tx(
     own_pkh: &Ed25519KeyHash,
     own_addr: &csl::address::Address,
@@ -58,19 +58,20 @@ pub fn input_is_equal_tx(
     eq_validator: &csl::plutus::PlutusScript,
     eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     tx_input: &csl::TransactionInput,
+    collateral: &csl::TransactionInput,
     eq_datum: &EqDatum,
 ) -> csl::tx_builder::TransactionBuilder {
     let mut tx_builder = create_tx_builder();
-    let datum = convert_plutus_data(eq_datum.to_plutus_data());
+    // let datum = convert_plutus_data(eq_datum.to_plutus_data());
 
-    let redeemer = to_redeemer(convert_plutus_data(
+    let redeemer = to_redeemer(&convert_plutus_data(
         EqRedeemer::IsEqual(eq_datum.to_owned()).to_plutus_data(),
     ));
     let mut tx_inputs_builder = TxInputsBuilder::new();
     let value = eq_validator_utxos.get(tx_input).unwrap().amount();
     let data_cost = csl::DataCost::new_coins_per_byte(&csl::utils::to_bignum(COINS_PER_UTXO_WORD));
 
-    let tx_input_witness = PlutusWitness::new(eq_validator, &datum, &redeemer);
+    let tx_input_witness = PlutusWitness::new_without_datum(eq_validator, &redeemer);
     tx_inputs_builder.add_plutus_script_input(&tx_input_witness, tx_input, &value);
 
     let mut available_inputs = csl::utils::TransactionUnspentOutputs::new();
@@ -78,6 +79,10 @@ pub fn input_is_equal_tx(
         let utxo = csl::utils::TransactionUnspentOutput::new(&tx_in, &tx_out);
         available_inputs.add(&utxo);
     });
+
+    let mut collateral_builder = TxInputsBuilder::new();
+    let collateral_amount = own_utxos.get(&collateral).unwrap().amount();
+    collateral_builder.add_input(&own_addr, &collateral, &collateral_amount);
 
     tx_builder
         .add_output(
@@ -93,6 +98,7 @@ pub fn input_is_equal_tx(
         .unwrap();
 
     tx_builder.set_inputs(&tx_inputs_builder);
+    tx_builder.set_collateral(&collateral_builder);
     tx_builder
         .add_inputs_from(
             &available_inputs,
@@ -104,7 +110,7 @@ pub fn input_is_equal_tx(
     tx_builder
 }
 
-/// `inputIsNotEqualTx eqValidator eqValidatorUtxos txIn eqDatum` make a transaction that checks if the EqDatum stored at the EqValidator's `txIn` is NOT equal to the provided one in `eqDatum`.
+/// Make a transaction that checks if the `EqDatum` stored at the `EqValidator`'s `tx_input` is NOT equal to the provided one in `eq_datum`.
 pub fn input_is_not_equal_tx(
     own_pkh: &Ed25519KeyHash,
     own_addr: &csl::address::Address,
@@ -112,12 +118,13 @@ pub fn input_is_not_equal_tx(
     eq_validator: &csl::plutus::PlutusScript,
     eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
     tx_input: &csl::TransactionInput,
+    collateral: &csl::TransactionInput,
     eq_datum: &EqDatum,
 ) -> csl::tx_builder::TransactionBuilder {
     let mut tx_builder = create_tx_builder();
     let datum = convert_plutus_data(eq_datum.to_plutus_data());
 
-    let redeemer = to_redeemer(convert_plutus_data(
+    let redeemer = to_redeemer(&convert_plutus_data(
         EqRedeemer::IsNotEqual(eq_datum.to_owned()).to_plutus_data(),
     ));
     let mut tx_inputs_builder = TxInputsBuilder::new();
@@ -133,6 +140,10 @@ pub fn input_is_not_equal_tx(
         available_inputs.add(&utxo);
     });
 
+    let mut collateral_builder = TxInputsBuilder::new();
+    let collateral_amount = own_utxos.get(&collateral).unwrap().amount();
+    collateral_builder.add_input(&own_addr, &collateral, &collateral_amount);
+
     tx_builder
         .add_output(
             &TransactionOutputBuilder::new()
@@ -147,6 +158,7 @@ pub fn input_is_not_equal_tx(
         .unwrap();
 
     tx_builder.set_inputs(&tx_inputs_builder);
+    tx_builder.set_collateral(&collateral_builder);
     tx_builder
         .add_inputs_from(
             &available_inputs,
