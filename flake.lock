@@ -6730,11 +6730,11 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1704891473,
-        "narHash": "sha256-3IEYPPXnZSqeupcQLK0R8LESqDLhH17BvwCROM84uKY=",
+        "lastModified": 1705568112,
+        "narHash": "sha256-ur0I+21S4gHak33umq7hjhVn6Zj7mHa3wlyLCtAnYS4=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "31fb021ba1c1279a24506f502fafe01b82a85af2",
+        "rev": "2181c9493ef7a15ca396f4a8bb9ed03dbf7c4c5d",
         "type": "github"
       },
       "original": {
