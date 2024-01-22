@@ -106,9 +106,9 @@ impl Ogmios {
     pub async fn evaluate_transaction(
         &self,
         tx_builder: &csl::tx_builder::TransactionBuilder,
-        plutus_scripts: Vec<&csl::plutus::PlutusScript>,
-        redeemers: Vec<&csl::plutus::PlutusData>,
-    ) -> csl::plutus::ExUnits {
+        plutus_scripts: &Vec<csl::plutus::PlutusScript>,
+        redeemers: &Vec<csl::plutus::PlutusData>,
+    ) -> Vec<csl::plutus::ExUnits> {
         let mut tx_builder = tx_builder.clone();
 
         tx_builder.set_fee(&csl::utils::to_bignum(0));
@@ -143,20 +143,43 @@ impl Ogmios {
             .await
             .unwrap();
 
-        let (mem, cpu) = resp.into_iter().fold((0, 0), |(mem, cpu), budgets| {
-            (mem + budgets.budget.memory, cpu + budgets.budget.cpu)
-        });
-        csl::plutus::ExUnits::new(&csl::utils::to_bignum(mem), &csl::utils::to_bignum(cpu))
+        resp.into_iter()
+            .map(|budgets| {
+                csl::plutus::ExUnits::new(
+                    &csl::utils::to_bignum(budgets.budget.memory),
+                    &csl::utils::to_bignum(budgets.budget.cpu),
+                )
+            })
+            .collect()
     }
 
-    pub async fn balance_transaction(
+    pub fn balance_transaction(
         &self,
         mut tx_builder: csl::tx_builder::TransactionBuilder,
         own_addr: &csl::address::Address,
+        redeemers: &Vec<csl::plutus::Redeemer>,
+        datums: &Vec<csl::plutus::PlutusData>,
         cost_models: &csl::plutus::Costmdls,
     ) -> csl::TransactionBody {
+        let mut redeemers_extra = csl::plutus::Redeemers::new();
+        redeemers.iter().for_each(|red| redeemers_extra.add(&red));
+
+        if !datums.is_empty() && !redeemers.is_empty() {
+            let datums_extra = if datums.is_empty() {
+                None
+            } else {
+                let mut ds = csl::plutus::PlutusList::new();
+                datums.iter().for_each(|dat| ds.add(&dat));
+                Some(ds)
+            };
+
+            let script_data_hash =
+                csl::utils::hash_script_data(&redeemers_extra, &cost_models, datums_extra);
+
+            let _ = tx_builder.set_script_data_hash(&script_data_hash);
+        }
         let _ = tx_builder.add_change_if_needed(own_addr);
-        let _ = tx_builder.calc_script_data_hash(&cost_models).unwrap();
+
         tx_builder.build().unwrap()
     }
 
@@ -179,15 +202,38 @@ impl Ogmios {
         tx_builder: csl::tx_builder::TransactionBuilder,
         wallet: &impl Wallet,
         own_addr: &csl::address::Address,
-        plutus_scripts: Vec<&csl::plutus::PlutusScript>,
-        redeemers: Vec<&csl::plutus::Redeemer>,
-        cost_models: &csl::plutus::Costmdls,
+        plutus_scripts: &Vec<csl::plutus::PlutusScript>,
+        redeemers: &Vec<csl::plutus::PlutusData>,
+        datums: &Vec<csl::plutus::PlutusData>,
     ) -> csl::crypto::TransactionHash {
-        let tx_body = self
-            .balance_transaction(tx_builder, own_addr, cost_models)
+        let ex_units = self
+            .evaluate_transaction(&tx_builder, plutus_scripts, redeemers)
             .await;
 
-        let tx = wallet.sign_transaction(&tx_body, plutus_scripts, redeemers);
+        let redeemers_w_ex_u = redeemers
+            .into_iter()
+            .enumerate()
+            .map(|(idx, redeemer_data)| {
+                csl::plutus::Redeemer::new(
+                    &csl::plutus::RedeemerTag::new_spend(),
+                    &csl::utils::to_bignum(0),
+                    &redeemer_data,
+                    &ex_units[idx], // TODO: This is wrong, ex units should be matched by their validator pointers
+                )
+            })
+            .collect::<Vec<csl::plutus::Redeemer>>();
+
+        let cost_models = self.query_costmdls().await;
+
+        let tx_body = self.balance_transaction(
+            tx_builder,
+            own_addr,
+            &redeemers_w_ex_u,
+            &datums,
+            &cost_models,
+        );
+
+        let tx = wallet.sign_transaction(&tx_body, plutus_scripts, &redeemers_w_ex_u);
 
         self.submit_transaction(&tx).await
     }

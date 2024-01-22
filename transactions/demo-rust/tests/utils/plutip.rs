@@ -59,8 +59,8 @@ impl Wallet for Plutip {
     fn sign_transaction(
         &self,
         tx_body: &TransactionBody,
-        plutus_scripts: Vec<&PlutusScript>,
-        redeemers: Vec<&Redeemer>,
+        plutus_scripts: &Vec<PlutusScript>,
+        redeemers: &Vec<Redeemer>,
     ) -> Transaction {
         let mut witness_set = TransactionWitnessSet::new();
         let mut vkey_witnesses = Vkeywitnesses::new();

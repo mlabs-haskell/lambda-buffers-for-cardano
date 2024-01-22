@@ -6,10 +6,8 @@ use cardano_serialization_lib::address::{EnterpriseAddress, StakeCredential};
 use cardano_serialization_lib::crypto::Ed25519KeyHash;
 use cardano_serialization_lib::crypto::TransactionHash;
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
-use cardano_serialization_lib::plutus::{PlutusScript, Redeemer, RedeemerTag};
+use cardano_serialization_lib::plutus::PlutusScript;
 use cardano_serialization_lib::tx_builder::tx_inputs_builder::{PlutusWitness, TxInputsBuilder};
-use cardano_serialization_lib::tx_builder_constants::TxBuilderConstants;
-use cardano_serialization_lib::utils::to_bignum;
 use cardano_serialization_lib::TransactionInput;
 use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer};
 use plutus_ledger_api::plutus_data::IsPlutusData;
@@ -122,36 +120,34 @@ pub fn mk_claim_tx(
 }
 
 pub async fn lock_tx_build_and_submit(
-    plutip: &impl Wallet,
+    wallet: &impl Wallet,
     ogmios: &Ogmios,
     eq_validator: &PlutusScript,
     example_eq_datum: &EqDatum,
 ) -> TransactionHash {
-    let utxos = ogmios.query_utxos(&plutip.get_own_addr()).await;
+    let utxos = ogmios.query_utxos(&wallet.get_own_addr()).await;
 
     let eq_validator_addr = EnterpriseAddress::new(
-        plutip.get_network_id(),
+        wallet.get_network_id(),
         &StakeCredential::from_scripthash(&eq_validator.hash()),
     )
     .to_address();
 
     let create_eq_datum_a_tx_builder = mk_lock_tx(
-        &plutip.get_own_pkh(),
+        &wallet.get_own_pkh(),
         &eq_validator_addr,
         example_eq_datum,
         &utxos,
     );
 
-    let costmdls = ogmios.query_costmdls().await;
-
     ogmios
         .balance_sign_and_submit_transacton(
             create_eq_datum_a_tx_builder,
-            plutip,
-            &plutip.get_own_addr(),
-            Vec::new(),
-            Vec::new(),
-            &costmdls,
+            wallet,
+            &wallet.get_own_addr(),
+            &Vec::new(),
+            &Vec::new(),
+            &Vec::new(),
         )
         .await
 }
@@ -162,6 +158,7 @@ pub async fn claim_tx_build_and_submit(
     eq_validator: &PlutusScript,
     eq_redeemer: &EqRedeemer,
     tx_in: &TransactionInput,
+    datum: &EqDatum,
 ) -> TransactionHash {
     let validator_addr = EnterpriseAddress::new(
         wallet.get_network_id(),
@@ -169,7 +166,7 @@ pub async fn claim_tx_build_and_submit(
     )
     .to_address();
 
-    let eq_validator_utxos_a = ogmios.query_utxos(&validator_addr).await;
+    let eq_validator_utxos = ogmios.query_utxos(&validator_addr).await;
     let utxos = ogmios.query_utxos(&wallet.get_own_addr()).await;
 
     let collateral = utxos.keys().next().unwrap();
@@ -179,38 +176,23 @@ pub async fn claim_tx_build_and_submit(
         &wallet.get_own_addr(),
         &utxos,
         eq_validator,
-        &eq_validator_utxos_a,
+        &eq_validator_utxos,
         &tx_in,
         &collateral,
         &eq_redeemer,
     );
 
     let redeemer_data = convert_plutus_data(eq_redeemer.to_plutus_data());
-    let budgets = ogmios
-        .evaluate_transaction(
-            &eq_datum_a_is_equal_tx,
-            vec![eq_validator],
-            vec![&redeemer_data],
-        )
-        .await;
-
-    let redeemer = Redeemer::new(
-        &RedeemerTag::new_spend(),
-        &to_bignum(0),
-        &redeemer_data,
-        &budgets,
-    );
-    // let costmdls = ogmios.query_costmdls().await;
-    let costmdls = TxBuilderConstants::plutus_default_cost_models();
+    let datums = convert_plutus_data(datum.to_plutus_data());
 
     ogmios
         .balance_sign_and_submit_transacton(
             eq_datum_a_is_equal_tx,
             wallet,
             &wallet.get_own_addr(),
-            vec![eq_validator],
-            vec![&redeemer],
-            &costmdls,
+            &vec![eq_validator.clone()],
+            &vec![redeemer_data],
+            &vec![datums],
         )
         .await
 }

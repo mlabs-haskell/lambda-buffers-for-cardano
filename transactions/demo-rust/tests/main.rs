@@ -102,6 +102,7 @@ mod tests {
             eq_validator,
             &EqRedeemer::IsEqual(example_eq_datum_a.clone()),
             &tx_in_a,
+            &example_eq_datum_a,
         )
         .await;
 

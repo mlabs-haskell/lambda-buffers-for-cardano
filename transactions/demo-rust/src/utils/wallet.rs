@@ -7,8 +7,8 @@ pub trait Wallet {
     fn sign_transaction(
         &self,
         tx_body: &TransactionBody,
-        plutus_scripts: Vec<&PlutusScript>,
-        redeemers: Vec<&Redeemer>,
+        plutus_scripts: &Vec<PlutusScript>,
+        redeemers: &Vec<Redeemer>,
     ) -> Transaction;
 
     fn get_own_pkh(&self) -> Ed25519KeyHash;
