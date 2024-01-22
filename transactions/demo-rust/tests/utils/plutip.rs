@@ -1,12 +1,16 @@
-use super::parse_pkh;
 use cardano_serialization_lib::address::{Address, EnterpriseAddress, StakeCredential};
+use cardano_serialization_lib::crypto::Vkeywitnesses;
 use cardano_serialization_lib::crypto::{Ed25519KeyHash, PrivateKey};
+use cardano_serialization_lib::plutus::{PlutusScript, PlutusScripts, Redeemer, Redeemers};
+use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
+use cardano_serialization_lib::{Transaction, TransactionBody, TransactionWitnessSet};
 use data_encoding::HEXLOWER;
+use demo_rust::utils::wallet::Wallet;
 use derive_builder::Builder;
 use std::fs;
 use std::io::Cursor;
 use std::process::{Child, Command};
-use std::{time};
+use std::time;
 
 #[derive(Builder, Clone)]
 pub struct PlutipConfig {
@@ -49,6 +53,58 @@ pub struct Plutip {
     handler: Child,
     config: PlutipConfig,
     info: PlutipInfo,
+}
+
+impl Wallet for Plutip {
+    fn sign_transaction(
+        &self,
+        tx_body: &TransactionBody,
+        plutus_scripts: Vec<&PlutusScript>,
+        redeemers: Vec<&Redeemer>,
+    ) -> Transaction {
+        let mut witness_set = TransactionWitnessSet::new();
+        let mut vkey_witnesses = Vkeywitnesses::new();
+        vkey_witnesses.add(&make_vkey_witness(
+            &hash_transaction(tx_body),
+            &self.get_priv_key(),
+        ));
+
+        let mut script_witnesses = PlutusScripts::new();
+
+        plutus_scripts
+            .iter()
+            .for_each(|script| script_witnesses.add(script));
+
+        let mut redeemer_witnesses = Redeemers::new();
+
+        redeemers
+            .iter()
+            .for_each(|redeemer| redeemer_witnesses.add(redeemer));
+
+        witness_set.set_vkeys(&vkey_witnesses);
+        witness_set.set_plutus_scripts(&script_witnesses);
+        witness_set.set_redeemers(&redeemer_witnesses);
+
+        Transaction::new(&tx_body, &witness_set, None)
+    }
+    fn get_own_pkh(&self) -> Ed25519KeyHash {
+        let pkh_str = &self.info.wallets[0].0;
+
+        Ed25519KeyHash::from_bytes(HEXLOWER.decode(&pkh_str.to_owned().into_bytes()).unwrap())
+            .unwrap()
+    }
+
+    fn get_own_addr(&self) -> Address {
+        EnterpriseAddress::new(
+            Self::NETWORK_ID,
+            &StakeCredential::from_keyhash(&self.get_own_pkh()),
+        )
+        .to_address()
+    }
+
+    fn get_network_id(&self) -> u8 {
+        Self::NETWORK_ID
+    }
 }
 
 impl Plutip {
@@ -107,19 +163,6 @@ impl Plutip {
         PrivateKey::from_normal_bytes(&bytes).unwrap()
     }
 
-    pub fn get_own_pkh(&self) -> Ed25519KeyHash {
-        let pkh_str = &self.info.wallets[0].0;
-        parse_pkh(pkh_str)
-    }
-
-    pub fn get_own_addr(&self) -> Address {
-        EnterpriseAddress::new(
-            Self::NETWORK_ID,
-            &StakeCredential::from_keyhash(&self.get_own_pkh()),
-        )
-        .to_address()
-    }
-
     pub fn get_node_socket(&self) -> String {
         self.info.node_socket.clone()
     }
@@ -132,10 +175,6 @@ impl Plutip {
         path.push("node.config");
 
         path.to_str().unwrap().to_string()
-    }
-
-    pub fn get_network_id(&self) -> u8 {
-        Self::NETWORK_ID
     }
 
     pub fn kill(&mut self) -> Result<(), std::io::Error> {

@@ -1,7 +1,8 @@
+use super::wallet::Wallet;
+use super::{to_int, to_redeemer};
 use cardano_serialization_lib as csl;
 use cardano_serialization_lib::address::Address;
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
-use demo_rust::utils::{sign_transaction, to_int, to_redeemer};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::value::Value as JsonValue;
@@ -62,8 +63,10 @@ impl Ogmios {
         resp.iter()
             .map(|utxo| {
                 (
-                    csl::TransactionInput::try_from(utxo).unwrap(),
-                    csl::TransactionOutput::try_from(utxo).unwrap(),
+                    csl::TransactionInput::try_from(utxo)
+                        .expect("Couldn't convert transaction input"),
+                    csl::TransactionOutput::try_from(utxo)
+                        .expect("Couldn't convert transaction output"),
                 )
             })
             .collect()
@@ -80,28 +83,24 @@ impl Ogmios {
 
         let mut costmdls = csl::plutus::Costmdls::new();
 
-        let mut plutus_v1 = csl::plutus::CostModel::new();
-        let mut plutus_v2 = csl::plutus::CostModel::new();
-
-        resp.plutus_cost_models
-            .get("plutus:v1")
-            .unwrap()
-            .iter()
-            .enumerate()
-            .for_each(|(index, model)| {
-                let _ = plutus_v1.set(index, &to_int(*model));
+        resp.plutus_cost_models.iter().for_each(|(lang, costs)| {
+            let mut cost_model = csl::plutus::CostModel::new();
+            costs.iter().enumerate().for_each(|(index, model)| {
+                let _ = cost_model.set(index, &to_int(*model));
             });
-        resp.plutus_cost_models
-            .get("plutus:v1")
-            .unwrap()
-            .iter()
-            .enumerate()
-            .for_each(|(index, model)| {
-                let _ = plutus_v2.set(index, &to_int(*model));
-            });
-        costmdls.insert(&csl::plutus::Language::new_plutus_v1(), &plutus_v1);
-        costmdls.insert(&csl::plutus::Language::new_plutus_v2(), &plutus_v2);
+            let language = match &lang[..] {
+                "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
+                "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
+                _ => panic!("Unknown Plutus language version"),
+            };
+            costmdls.insert(&language, &cost_model);
+        });
         costmdls
+    }
+
+    pub async fn await_tx_confirm(&self, _tx_hash: &csl::crypto::TransactionHash) {
+        // TODO: implement this
+        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
     }
 
     pub async fn evaluate_transaction(
@@ -157,7 +156,7 @@ impl Ogmios {
         cost_models: &csl::plutus::Costmdls,
     ) -> csl::TransactionBody {
         let _ = tx_builder.add_change_if_needed(own_addr);
-        tx_builder.calc_script_data_hash(&cost_models);
+        let _ = tx_builder.calc_script_data_hash(&cost_models).unwrap();
         tx_builder.build().unwrap()
     }
 
@@ -178,7 +177,7 @@ impl Ogmios {
     pub async fn balance_sign_and_submit_transacton(
         &self,
         tx_builder: csl::tx_builder::TransactionBuilder,
-        priv_key: &csl::crypto::PrivateKey,
+        wallet: &impl Wallet,
         own_addr: &csl::address::Address,
         plutus_scripts: Vec<&csl::plutus::PlutusScript>,
         redeemers: Vec<&csl::plutus::Redeemer>,
@@ -188,7 +187,7 @@ impl Ogmios {
             .balance_transaction(tx_builder, own_addr, cost_models)
             .await;
 
-        let tx = sign_transaction(&tx_body, priv_key, plutus_scripts, redeemers);
+        let tx = wallet.sign_transaction(&tx_body, plutus_scripts, redeemers);
 
         self.submit_transaction(&tx).await
     }
@@ -227,7 +226,7 @@ impl Drop for Ogmios {
     }
 }
 
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone)]
 pub struct OgmiosConfig {
     #[builder(default = r#""".to_string()"#)]
     node_socket: String,
@@ -243,14 +242,14 @@ pub struct OgmiosConfig {
     _max_in_flight: u32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct QueryLedgerStateUtxoParams {
     addresses: Vec<String>,
 }
 
 type QueryLedgerStateUtxoResponse = Vec<Utxo>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Utxo {
     transaction: TransactionId,
     index: u32,
@@ -262,27 +261,27 @@ struct Utxo {
     script: Option<Script>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct TransactionId {
     id: String,
 }
 
 type Value = BTreeMap<String, BTreeMap<String, u64>>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 enum Script {
     Native(NativeScript),
     Plutus(PlutusScript),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct NativeScript {
     language: String,
     json: JsonValue,
     cbor: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct PlutusScript {
     language: String,
     cbor: String,
@@ -312,8 +311,40 @@ impl TryFrom<&Utxo> for csl::TransactionOutput {
         // TODO(szg251): This whole thing
         let assets = csl::MultiAsset::new();
 
-        TransactionOutputBuilder::new()
-            .with_address(&csl::address::Address::from_bech32(&resp.address).unwrap())
+        let mut tx_builder = TransactionOutputBuilder::new();
+
+        if let Some(datum_hash) = &resp.datum_hash {
+            tx_builder = tx_builder.with_data_hash(
+                &csl::crypto::DataHash::from_hex(&datum_hash).expect("Couldn't convert datum hash"),
+            )
+        }
+
+        if let Some(datum) = &resp.datum {
+            tx_builder = tx_builder.with_plutus_data(
+                &csl::plutus::PlutusData::from_hex(&datum).expect("Couldn't convert datum"),
+            )
+        }
+
+        if let Some(script) = &resp.script {
+            let script_ref = match script {
+                Script::Native(native_script) => csl::ScriptRef::new_native_script(
+                    &csl::NativeScript::from_hex(&native_script.cbor)
+                        .expect("Couldn't convert native script"),
+                ),
+                Script::Plutus(plutus_script) => csl::ScriptRef::new_plutus_script(
+                    &csl::plutus::PlutusScript::from_hex(&plutus_script.cbor)
+                        .expect("Couldn't convert Plutus script"),
+                ),
+            };
+
+            tx_builder = tx_builder.with_script_ref(&script_ref)
+        }
+
+        tx_builder
+            .with_address(
+                &csl::address::Address::from_bech32(&resp.address)
+                    .expect("Couldn't convert address"),
+            )
             .next()
             .unwrap()
             .with_value(&csl::utils::Value::new_with_assets(
@@ -324,33 +355,33 @@ impl TryFrom<&Utxo> for csl::TransactionOutput {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct EvaluateTransactionParams {
     transaction: TransactionCbor,
     #[serde(rename(deserialize = "additionalUtxo"))]
     additional_utxo: Vec<Utxo>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct TransactionCbor {
     cbor: String,
 }
 
 type EvaluateTransactionResponse = Vec<Budgets>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Budgets {
     pub validator: String,
     pub budget: Budget,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Budget {
     pub memory: u64,
     pub cpu: u64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct JsonRPCRequest<T: Serialize> {
     jsonrpc: String,
     method: String,
@@ -369,7 +400,7 @@ impl<T: Serialize> JsonRPCRequest<T> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 enum JsonRPCResponse<T: Serialize> {
     Success {
@@ -386,7 +417,7 @@ enum JsonRPCResponse<T: Serialize> {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct JsonRPCError {
     code: i16,
     message: String,
@@ -395,12 +426,12 @@ struct JsonRPCError {
 
 type SubmitTransactionParams = EvaluateTransactionParams;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SubmitTransactionResponse {
     transaction: TransactionId,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QueryLedgerStateProtocolParametersResponse {
     #[serde(rename(deserialize = "plutusCostModels"))]
     plutus_cost_models: BTreeMap<String, Vec<i64>>,

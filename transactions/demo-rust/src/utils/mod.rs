@@ -1,15 +1,13 @@
-use cardano_serialization_lib::crypto::{PrivateKey, Vkeywitnesses};
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::plutus as csl;
-use cardano_serialization_lib::plutus::{
-    ConstrPlutusData, ExUnitPrices, ExUnits, PlutusScript, PlutusScripts, Redeemer, Redeemers,
-};
+use cardano_serialization_lib::plutus::{ConstrPlutusData, ExUnitPrices, ExUnits};
 use cardano_serialization_lib::tx_builder::{TransactionBuilder, TransactionBuilderConfigBuilder};
-use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness, to_bignum, Int};
-use cardano_serialization_lib::{
-    Transaction, TransactionBody, TransactionWitnessSet, UnitInterval,
-};
+use cardano_serialization_lib::utils::{to_bignum, Int};
+use cardano_serialization_lib::UnitInterval;
 use plutus_ledger_api::plutus_data as pla;
+
+pub mod ogmios;
+pub mod wallet;
 
 pub fn create_tx_builder() -> TransactionBuilder {
     let linear_fee = &LinearFee::new(&to_bignum(100), &to_bignum(100_000));
@@ -29,17 +27,6 @@ pub fn create_tx_builder() -> TransactionBuilder {
         .unwrap();
     TransactionBuilder::new(&cfg)
 }
-
-// let cfg = TransactionBuilderConfigBuilder::new()
-//     .fee_algo(linear_fee)
-//     .pool_deposit(&to_bignum(1000000))
-//     .key_deposit(&to_bignum(0))
-//     .max_value_size(5000)
-//     .max_tx_size(16384)
-//     .coins_per_utxo_byte(&to_bignum(4310))
-//     .ex_unit_prices(&ExUnitPrices::new(
-//         &UnitInterval::new(&to_bignum(577), &to_bignum(10_000)),
-//         &UnitInterval::new(&to_bignum(721), &to_bignum(10_000_000)),
 
 pub fn convert_plutus_data(pla_plutus_data: pla::PlutusData) -> csl::PlutusData {
     match pla_plutus_data {
@@ -66,35 +53,6 @@ pub fn convert_plutus_data(pla_plutus_data: pla::PlutusData) -> csl::PlutusData 
         }
         pla::PlutusData::Bytes(b) => csl::PlutusData::new_bytes(b),
     }
-}
-
-pub fn sign_transaction(
-    tx_body: &TransactionBody,
-    priv_key: &PrivateKey,
-    plutus_scripts: Vec<&PlutusScript>,
-    redeemers: Vec<&Redeemer>,
-) -> Transaction {
-    let mut witness_set = TransactionWitnessSet::new();
-    let mut vkey_witnesses = Vkeywitnesses::new();
-    vkey_witnesses.add(&make_vkey_witness(&hash_transaction(tx_body), priv_key));
-
-    let mut script_witnesses = PlutusScripts::new();
-
-    plutus_scripts
-        .iter()
-        .for_each(|script| script_witnesses.add(script));
-
-    let mut redeemer_witnesses = Redeemers::new();
-
-    redeemers
-        .iter()
-        .for_each(|redeemer| redeemer_witnesses.add(redeemer));
-
-    witness_set.set_vkeys(&vkey_witnesses);
-    witness_set.set_plutus_scripts(&script_witnesses);
-    witness_set.set_redeemers(&redeemer_witnesses);
-
-    Transaction::new(&tx_body, &witness_set, None)
 }
 
 pub fn to_redeemer(plutus_data: &csl::PlutusData) -> csl::Redeemer {
