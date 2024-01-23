@@ -16,12 +16,10 @@
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
               ]);
-          devShellTools =
+          buildInputs =
             pkgs.lib.optionals pkgs.stdenv.isLinux [
               pkgs.pkg-config
             ];
-
-
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
             inputs'.ogmios.packages."ogmios:exe:ogmios"
