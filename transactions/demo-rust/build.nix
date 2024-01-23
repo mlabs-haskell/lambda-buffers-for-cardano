@@ -13,7 +13,7 @@
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
               ];
-          devShellTools = [
+          testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
             inputs'.ogmios.packages."ogmios:exe:ogmios"
           ];
