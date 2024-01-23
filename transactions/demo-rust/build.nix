@@ -8,11 +8,12 @@
           inherit (inputs) crane;
           crateName = "demo";
           nativeBuildInputs =
-            pkgs.lib.optionals pkgs.stdenv.isDarwin
+            (pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.pkg-config ]) ++
+            (pkgs.lib.optionals pkgs.stdenv.isDarwin
               [
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-              ];
+              ]);
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
             inputs'.ogmios.packages."ogmios:exe:ogmios"
