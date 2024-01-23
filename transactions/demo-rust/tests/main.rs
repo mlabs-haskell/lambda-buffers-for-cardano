@@ -15,12 +15,113 @@ mod tests {
     use plutus_ledger_api::v2::script::ValidatorHash;
     use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash};
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
+    use serial_test::serial;
     use std::fs;
 
     #[test]
-    fn test_it() {
+    #[serial]
+    fn test_plutarch_is_equal() {
         let plutarch_script = read_script("data/demo-plutarch-config.json");
+        let (example_eq_datum_a, _) = setup_test_data();
+
+        tokio_test::block_on(is_eq_validator_test(&plutarch_script, &example_eq_datum_a));
+    }
+
+    #[test]
+    #[serial]
+    fn test_plutarch_is_not_equal() {
+        let plutarch_script = read_script("data/demo-plutarch-config.json");
+        let (example_eq_datum_a, example_eq_datum_b) = setup_test_data();
+
+        tokio_test::block_on(is_not_eq_validator_test(
+            &plutarch_script,
+            &example_eq_datum_a,
+            &example_eq_datum_b,
+        ));
+    }
+
+    #[test]
+    #[serial]
+    fn test_plutustx_is_equal() {
         let plutustx_script = read_script("data/demo-plutustx-config.json");
+        let (example_eq_datum_a, _) = setup_test_data();
+
+        tokio_test::block_on(is_eq_validator_test(&plutustx_script, &example_eq_datum_a));
+    }
+
+    #[test]
+    #[serial]
+    fn test_plutustx_is_not_equal() {
+        let plutustx_script = read_script("data/demo-plutustx-config.json");
+        let (example_eq_datum_a, example_eq_datum_b) = setup_test_data();
+
+        tokio_test::block_on(is_not_eq_validator_test(
+            &plutustx_script,
+            &example_eq_datum_a,
+            &example_eq_datum_b,
+        ));
+    }
+
+    async fn is_eq_validator_test(eq_validator: &PlutusScript, example_eq_datum: &EqDatum) {
+        let (plutip, ogmios) = setup_plutip_test().await;
+
+        let tx_hash_lock_a =
+            lock_tx_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum).await;
+
+        ogmios.await_tx_confirm(&tx_hash_lock_a).await;
+
+        let tx_hash_claim_a = claim_tx_build_and_submit(
+            &plutip,
+            &ogmios,
+            eq_validator,
+            &EqRedeemer::IsEqual(example_eq_datum.clone()),
+            &example_eq_datum,
+        )
+        .await;
+
+        ogmios.await_tx_confirm(&tx_hash_claim_a).await;
+    }
+
+    async fn is_not_eq_validator_test(
+        eq_validator: &PlutusScript,
+        example_eq_datum_a: &EqDatum,
+        example_eq_datum_b: &EqDatum,
+    ) {
+        let (plutip, ogmios) = setup_plutip_test().await;
+
+        let tx_hash_lock_b =
+            lock_tx_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_b).await;
+
+        ogmios.await_tx_confirm(&tx_hash_lock_b).await;
+
+        let tx_hash_claim_b = claim_tx_build_and_submit(
+            &plutip,
+            &ogmios,
+            eq_validator,
+            &EqRedeemer::IsNotEqual(example_eq_datum_a.clone()),
+            &example_eq_datum_b,
+        )
+        .await;
+
+        ogmios.await_tx_confirm(&tx_hash_claim_b).await;
+    }
+
+    async fn setup_plutip_test() -> (impl Wallet, Ogmios) {
+        let plutip_config = PlutipConfigBuilder::default().build().unwrap();
+        let plutip = Plutip::start(&plutip_config).await;
+
+        let ogmios_config = OgmiosConfigBuilder::default()
+            .node_socket(plutip.get_node_socket())
+            .node_config(plutip.get_node_config_path())
+            .build()
+            .unwrap();
+        let ogmios = Ogmios::start(&ogmios_config).await;
+
+        (plutip, ogmios)
+    }
+
+    fn setup_test_data() -> (EqDatum, EqDatum) {
+        let plutarch_script = read_script("data/demo-plutarch-config.json");
 
         let example_token_name = TokenName(LedgerBytes(b"example token name".to_vec()));
         let example_currency_symbol =
@@ -62,71 +163,7 @@ mod tests {
             sum: Sum::Foo(example_asset_class.clone()),
             prod: Product(example_asset_class, example_address, example_plutus_bytes),
         };
-
-        tokio_test::block_on(eq_validator_test(
-            &plutarch_script,
-            &example_eq_datum_a,
-            &example_eq_datum_b,
-        ));
-        tokio_test::block_on(eq_validator_test(
-            &plutustx_script,
-            &example_eq_datum_a,
-            &example_eq_datum_b,
-        ));
-    }
-
-    async fn eq_validator_test(
-        eq_validator: &PlutusScript,
-        example_eq_datum_a: &EqDatum,
-        example_eq_datum_b: &EqDatum,
-    ) {
-        let (plutip, ogmios) = setup_plutip_test().await;
-
-        let tx_hash_lock_a =
-            lock_tx_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_a).await;
-
-        ogmios.await_tx_confirm(&tx_hash_lock_a).await;
-
-        // let tx_hash_lock_b =
-        //     lock_tx_build_and_submit(&plutip, &ogmios, eq_validator, example_eq_datum_b).await;
-
-        // ogmios.await_tx_confirm(&tx_hash_lock_b).await;
-
-        let tx_hash_claim_a = claim_tx_build_and_submit(
-            &plutip,
-            &ogmios,
-            eq_validator,
-            &EqRedeemer::IsEqual(example_eq_datum_a.clone()),
-            &example_eq_datum_a,
-        )
-        .await;
-
-        ogmios.await_tx_confirm(&tx_hash_claim_a).await;
-
-        // let tx_hash_claim_b = claim_tx_build_and_submit(
-        //     &plutip,
-        //     &ogmios,
-        //     eq_validator,
-        //     &EqRedeemer::IsNotEqual(example_eq_datum_a.clone()),
-        //     &example_eq_datum_a,
-        // )
-        // .await;
-        //
-        // ogmios.await_tx_confirm(&tx_hash_claim_b).await;
-    }
-
-    async fn setup_plutip_test() -> (impl Wallet, Ogmios) {
-        let plutip_config = PlutipConfigBuilder::default().build().unwrap();
-        let plutip = Plutip::start(&plutip_config).await;
-
-        let ogmios_config = OgmiosConfigBuilder::default()
-            .node_socket(plutip.get_node_socket())
-            .node_config(plutip.get_node_config_path())
-            .build()
-            .unwrap();
-        let ogmios = Ogmios::start(&ogmios_config).await;
-
-        (plutip, ogmios)
+        (example_eq_datum_a, example_eq_datum_b)
     }
 
     fn read_script(path: &str) -> PlutusScript {

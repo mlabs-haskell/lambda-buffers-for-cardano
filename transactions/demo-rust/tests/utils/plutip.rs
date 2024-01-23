@@ -9,7 +9,7 @@ use demo_rust::utils::wallet::Wallet;
 use derive_builder::Builder;
 use std::fs;
 use std::io::Cursor;
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 use std::time;
 
 #[derive(Builder, Clone)]
@@ -120,11 +120,12 @@ impl Plutip {
 
         let handler = Command::new("local-cluster")
             .args(args)
+            .stdout(Stdio::null())
             .spawn()
             .expect("failed to execute plutip");
 
         // TODO This is less than ideal, we should do a proper healthcheck
-        tokio::time::sleep(time::Duration::from_secs(5)).await;
+        tokio::time::sleep(time::Duration::from_secs(10)).await;
         let info = Self::fetch_info(&config.dump_path);
         Self {
             handler,

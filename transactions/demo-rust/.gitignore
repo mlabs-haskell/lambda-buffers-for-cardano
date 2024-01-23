@@ -1,4 +1,6 @@
 /target
 /data
 /.extras
-.node-config
+/.node-config
+/.wallets
+/plutip-info.json

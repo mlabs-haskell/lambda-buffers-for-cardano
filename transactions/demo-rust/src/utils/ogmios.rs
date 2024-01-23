@@ -7,7 +7,7 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::value::Value as JsonValue;
 use std::collections::BTreeMap;
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 use std::time;
 use uuid::Uuid;
 
@@ -28,6 +28,7 @@ impl Ogmios {
 
         let handler = Command::new("ogmios")
             .args(args)
+            .stdout(Stdio::null())
             .spawn()
             .expect("failed to execute ogmios");
 
@@ -100,7 +101,7 @@ impl Ogmios {
 
     pub async fn await_tx_confirm(&self, _tx_hash: &csl::crypto::TransactionHash) {
         // TODO: implement this
-        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
     }
 
     pub async fn evaluate_transaction(
@@ -157,24 +158,30 @@ impl Ogmios {
         &self,
         mut tx_builder: csl::tx_builder::TransactionBuilder,
         own_addr: &csl::address::Address,
-        redeemers: &Vec<csl::plutus::Redeemer>,
-        datums: &Vec<csl::plutus::PlutusData>,
+        wit_redeemers: &Vec<csl::plutus::Redeemer>,
+        wit_datums: &Vec<csl::plutus::PlutusData>,
         cost_models: &csl::plutus::Costmdls,
     ) -> csl::TransactionBody {
-        let mut redeemers_extra = csl::plutus::Redeemers::new();
-        redeemers.iter().for_each(|red| redeemers_extra.add(&red));
+        let mut redeemers = csl::plutus::Redeemers::new();
+        wit_redeemers.iter().for_each(|red| redeemers.add(&red));
 
-        if !datums.is_empty() && !redeemers.is_empty() {
-            let datums_extra = if datums.is_empty() {
+        if !wit_datums.is_empty() || !wit_redeemers.is_empty() {
+            let datums = if wit_datums.is_empty() {
                 None
             } else {
                 let mut ds = csl::plutus::PlutusList::new();
-                datums.iter().for_each(|dat| ds.add(&dat));
+                wit_datums.iter().for_each(|dat| ds.add(&dat));
                 Some(ds)
             };
 
-            let script_data_hash =
-                csl::utils::hash_script_data(&redeemers_extra, &cost_models, datums_extra);
+            let mut used_langs = csl::plutus::Languages::new();
+            used_langs.add(csl::plutus::Language::new_plutus_v2());
+
+            let script_data_hash = csl::utils::hash_script_data(
+                &redeemers,
+                &cost_models.retain_language_versions(&used_langs),
+                datums,
+            );
 
             let _ = tx_builder.set_script_data_hash(&script_data_hash);
         }
@@ -203,14 +210,14 @@ impl Ogmios {
         wallet: &impl Wallet,
         own_addr: &csl::address::Address,
         plutus_scripts: &Vec<csl::plutus::PlutusScript>,
-        redeemers: &Vec<csl::plutus::PlutusData>,
-        datums: &Vec<csl::plutus::PlutusData>,
+        wit_redeemers: &Vec<csl::plutus::PlutusData>,
+        wit_datums: &Vec<csl::plutus::PlutusData>,
     ) -> csl::crypto::TransactionHash {
         let ex_units = self
-            .evaluate_transaction(&tx_builder, plutus_scripts, redeemers)
+            .evaluate_transaction(&tx_builder, plutus_scripts, wit_redeemers)
             .await;
 
-        let redeemers_w_ex_u = redeemers
+        let redeemers_w_ex_u = wit_redeemers
             .into_iter()
             .enumerate()
             .map(|(idx, redeemer_data)| {
@@ -218,6 +225,10 @@ impl Ogmios {
                     &csl::plutus::RedeemerTag::new_spend(),
                     &csl::utils::to_bignum(0),
                     &redeemer_data,
+                    // &csl::plutus::ExUnits::new(
+                    //     &csl::utils::to_bignum(1),
+                    //     &csl::utils::to_bignum(2),
+                    // ),
                     &ex_units[idx], // TODO: This is wrong, ex units should be matched by their validator pointers
                 )
             })
@@ -229,7 +240,7 @@ impl Ogmios {
             tx_builder,
             own_addr,
             &redeemers_w_ex_u,
-            &datums,
+            &wit_datums,
             &cost_models,
         );
 

@@ -188,7 +188,6 @@ pub async fn claim_tx_build_and_submit(
     );
 
     let redeemer_data = convert_plutus_data(eq_redeemer.to_plutus_data());
-    let datums = convert_plutus_data(datum.to_plutus_data());
 
     ogmios
         .balance_sign_and_submit_transacton(
@@ -197,7 +196,7 @@ pub async fn claim_tx_build_and_submit(
             &wallet.get_own_addr(),
             &vec![eq_validator.clone()],
             &vec![redeemer_data],
-            &vec![datums],
+            &Vec::new(),
         )
         .await
 }
