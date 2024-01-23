@@ -8,7 +8,6 @@ use cardano_serialization_lib::crypto::TransactionHash;
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
 use cardano_serialization_lib::plutus::PlutusScript;
 use cardano_serialization_lib::tx_builder::tx_inputs_builder::{PlutusWitness, TxInputsBuilder};
-use cardano_serialization_lib::TransactionInput;
 use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer};
 use plutus_ledger_api::plutus_data::IsPlutusData;
 use std::collections::BTreeMap;
@@ -157,7 +156,6 @@ pub async fn claim_tx_build_and_submit(
     ogmios: &Ogmios,
     eq_validator: &PlutusScript,
     eq_redeemer: &EqRedeemer,
-    tx_in: &TransactionInput,
     datum: &EqDatum,
 ) -> TransactionHash {
     let validator_addr = EnterpriseAddress::new(
@@ -168,6 +166,13 @@ pub async fn claim_tx_build_and_submit(
 
     let eq_validator_utxos = ogmios.query_utxos(&validator_addr).await;
     let utxos = ogmios.query_utxos(&wallet.get_own_addr()).await;
+
+    let (tx_in, _) = eq_validator_utxos
+        .iter()
+        .find(|(_, tx_out)| {
+            tx_out.plutus_data() == Some(convert_plutus_data(datum.to_plutus_data()))
+        })
+        .expect("Utxo with inline datum not found");
 
     let collateral = utxos.keys().next().unwrap();
 

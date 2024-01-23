@@ -4,7 +4,6 @@ mod utils;
 mod tests {
     use super::utils::plutip::{Plutip, PlutipConfigBuilder};
     use cardano_serialization_lib::plutus::PlutusScript;
-    use cardano_serialization_lib::TransactionInput;
     use demo_rust::utils::ogmios::{Ogmios, OgmiosConfigBuilder};
     use demo_rust::utils::wallet::Wallet;
     use demo_rust::{claim_tx_build_and_submit, lock_tx_build_and_submit};
@@ -93,30 +92,23 @@ mod tests {
 
         // ogmios.await_tx_confirm(&tx_hash_lock_b).await;
 
-        // TODO: Verify that the tx index is correct (includes datum)
-        let tx_in_a = TransactionInput::new(&tx_hash_lock_a, 0);
-
         let tx_hash_claim_a = claim_tx_build_and_submit(
             &plutip,
             &ogmios,
             eq_validator,
             &EqRedeemer::IsEqual(example_eq_datum_a.clone()),
-            &tx_in_a,
             &example_eq_datum_a,
         )
         .await;
 
         ogmios.await_tx_confirm(&tx_hash_claim_a).await;
 
-        // // TODO: Verify that the tx index is correct (includes datum)
-        // let tx_in_b = TransactionInput::new(&tx_hash_lock_b, 0);
-
         // let tx_hash_claim_b = claim_tx_build_and_submit(
         //     &plutip,
         //     &ogmios,
         //     eq_validator,
         //     &EqRedeemer::IsNotEqual(example_eq_datum_a.clone()),
-        //     &tx_in_b,
+        //     &example_eq_datum_a,
         // )
         // .await;
         //
