@@ -21,7 +21,6 @@
 
           # Plutarch itself
           "${inputs.plutarch}"
-          "${inputs.plutarch}/plutarch-extra"
 
           # Demo API
           "${config.packages.lbf-demo-plutus-api-plutarch}"
