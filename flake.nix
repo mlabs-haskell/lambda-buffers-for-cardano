@@ -1,7 +1,7 @@
 {
   description = "LambdaBuffers Cardano Demo";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     # Flakes as modules, using this extensively to organize the repo into modules (build.nix files)
     flake-parts.url = "github:hercules-ci/flake-parts";

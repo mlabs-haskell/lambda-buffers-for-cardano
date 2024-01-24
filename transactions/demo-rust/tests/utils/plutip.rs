@@ -1,19 +1,18 @@
 use cardano_serialization_lib::address::{Address, EnterpriseAddress, StakeCredential};
 use cardano_serialization_lib::crypto::Vkeywitnesses;
 use cardano_serialization_lib::crypto::{Ed25519KeyHash, PrivateKey};
-use tokio::runtime::Runtime;
 use cardano_serialization_lib::plutus::{PlutusScript, PlutusScripts, Redeemer, Redeemers};
 use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
-use tokio::process::{Child, Command};
-use tokio;
 use cardano_serialization_lib::{Transaction, TransactionBody, TransactionWitnessSet};
 use data_encoding::HEXLOWER;
 use demo_rust::utils::wallet::Wallet;
 use derive_builder::Builder;
 use std::fs;
 use std::io::Cursor;
-use std::process::{Stdio};
+use std::process::Stdio;
 use std::time;
+use tokio;
+use tokio::process::{Child, Command};
 
 #[derive(Builder, Clone)]
 pub struct PlutipConfig {
