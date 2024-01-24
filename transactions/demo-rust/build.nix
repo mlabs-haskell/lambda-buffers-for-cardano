@@ -10,11 +10,10 @@
           nativeBuildInputs =
             (pkgs.lib.optionals pkgs.stdenv.isLinux [
               pkgs.pkg-config
-              pkgs.openssl
+              pkgs.openssl.dev
             ]) ++
             (pkgs.lib.optionals pkgs.stdenv.isDarwin
               [
-                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
               ]);
