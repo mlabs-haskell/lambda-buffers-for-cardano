@@ -9,6 +9,7 @@
           crateName = "demo";
           nativeBuildInputs =
             (pkgs.lib.optionals pkgs.stdenv.isLinux [
+              pkgs.pkg-config
               pkgs.openssl
             ]) ++
             (pkgs.lib.optionals pkgs.stdenv.isDarwin
