@@ -25,6 +25,7 @@
             inputs'.ogmios.packages."ogmios:exe:ogmios"
             pkgs.cargo-nextest
           ];
+          cargoNextestExtraArgs = "--test-threads 1";
 
           extraSources = [
             # LB base schema and runtime libs
