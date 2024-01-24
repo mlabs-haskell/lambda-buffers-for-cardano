@@ -1,14 +1,21 @@
 {
   description = "LambdaBuffers Cardano Demo";
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs";
+
+    # Flakes as modules, using this extensively to organize the repo into modules (build.nix files)
+    flake-parts.url = "github:hercules-ci/flake-parts";
+
+    # Hercules CI effects
+    hci-effects.url = "github:hercules-ci/hercules-ci-effects";
+
+    # Code quality automation
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+
     lbf.url = "github:mlabs-haskell/lambda-buffers";
     haskell-nix.follows = "lbf/haskell-nix";
-    nixpkgs.follows = "lbf/nixpkgs";
-    pre-commit-hooks.follows = "lbf/pre-commit-hooks";
-    hci-effects.follows = "lbf/hci-effects";
-    ctl.follows = "lbf/ctl";
     iohk-nix.follows = "lbf/iohk-nix";
-    flake-parts.follows = "lbf/flake-parts";
+    ctl.follows = "lbf/ctl";
     plutarch.follows = "lbf/plutarch";
   };
 
