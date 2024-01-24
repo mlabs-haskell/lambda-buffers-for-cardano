@@ -1,3 +1,5 @@
 [profile.default]
 test-threads = 1
-leak-timeout = "500ms"
+
+[profile.release]
+test-threads = 1
