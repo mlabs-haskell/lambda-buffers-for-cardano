@@ -10,13 +10,15 @@
           nativeBuildInputs =
             (pkgs.lib.optionals pkgs.stdenv.isLinux [
               pkgs.pkg-config
-              pkgs.openssl.dev
             ]) ++
             (pkgs.lib.optionals pkgs.stdenv.isDarwin
               [
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
               ]);
+          buildInputs = [
+            pkgs.openssl.dev
+          ];
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
             inputs'.ogmios.packages."ogmios:exe:ogmios"
