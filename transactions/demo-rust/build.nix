@@ -20,6 +20,7 @@
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
             inputs'.ogmios.packages."ogmios:exe:ogmios"
+            pkgs.cargo-nextest
           ];
 
           extraSources = [
