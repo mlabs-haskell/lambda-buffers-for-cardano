@@ -14,8 +14,10 @@
             ]) ++
             (pkgs.lib.optionals pkgs.stdenv.isDarwin
               [
+                pkgs.darwin.apple_sdk.frameworks.CoreFoundation
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+                pkgs.darwin.apple_sdk.frameworks.PythonFramework
               ]);
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
