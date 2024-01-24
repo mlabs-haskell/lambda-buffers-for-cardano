@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { config, inputs', system, pkgs, ... }:
+  perSystem = { config, inputs', system, pkgs, pkgsForCtl, ... }:
 
     let
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
@@ -13,7 +13,6 @@
             ]) ++
             (pkgs.lib.optionals pkgs.stdenv.isDarwin
               [
-                pkgs.gcc
                 pkgs.darwin.apple_sdk.frameworks.Security
                 pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
               ]);
@@ -21,8 +20,8 @@
             pkgs.openssl.dev
           ];
           testTools = [
-            inputs'.plutip.packages."plutip-core:exe:local-cluster"
-            inputs'.ogmios.packages."ogmios:exe:ogmios"
+            pkgsForCtl.ogmios
+            pkgsForCtl.local-cluster
             pkgs.cargo-nextest
           ];
           cargoNextestExtraArgs = "--test-threads 1";
