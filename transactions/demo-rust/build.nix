@@ -19,6 +19,7 @@
           buildInputs =
             pkgs.lib.optionals pkgs.stdenv.isLinux [
               pkgs.pkg-config
+              pkgs.openssl
             ];
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
