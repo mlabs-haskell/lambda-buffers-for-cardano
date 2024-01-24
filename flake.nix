@@ -20,8 +20,8 @@
     plutarch.follows = "lbf/plutarch";
     crane.url = "github:ipetkov/crane";
 
-    plutip.url = "github:mlabs-haskell/plutip";
-    ogmios.url = "github:mlabs-haskell/ogmios-nixos";
+    plutip.follows = "ctl/plutip";
+    ogmios.follows = "ctl/ogmios-nixos";
   };
 
   outputs = inputs@{ flake-parts, ... }:
