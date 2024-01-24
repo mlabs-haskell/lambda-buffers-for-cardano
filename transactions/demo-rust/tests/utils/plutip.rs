@@ -9,8 +9,10 @@ use demo_rust::utils::wallet::Wallet;
 use derive_builder::Builder;
 use std::fs;
 use std::io::Cursor;
-use std::process::{Child, Command, Stdio};
+use std::process::Stdio;
 use std::time;
+use tokio;
+use tokio::process::{Child, Command};
 
 #[derive(Builder, Clone)]
 pub struct PlutipConfig {
@@ -121,6 +123,7 @@ impl Plutip {
         let handler = Command::new("local-cluster")
             .args(args)
             .stdout(Stdio::null())
+            .kill_on_drop(true)
             .spawn()
             .expect("failed to execute plutip");
 
@@ -178,15 +181,19 @@ impl Plutip {
         path.to_str().unwrap().to_string()
     }
 
-    pub fn kill(&mut self) -> Result<(), std::io::Error> {
+    pub async fn kill(&mut self) -> Result<(), std::io::Error> {
+        self.cleanup()?;
+        self.handler.kill().await
+    }
+
+    pub fn cleanup(&mut self) -> Result<(), std::io::Error> {
         fs::remove_file(&self.config.dump_path)?;
-        fs::remove_dir_all(&self.config.wallets_dir)?;
-        self.handler.kill()
+        fs::remove_dir_all(&self.config.wallets_dir)
     }
 }
 
 impl Drop for Plutip {
     fn drop(&mut self) {
-        let _ = self.kill();
+        self.cleanup().expect("Failed to clean up after Plutip.")
     }
 }

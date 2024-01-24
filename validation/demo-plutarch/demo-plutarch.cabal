@@ -90,7 +90,6 @@ library
     , lbf-demo-plutus-api-plutarch
     , lbr-plutarch
     , plutarch
-    , plutarch-extra
 
   hs-source-dirs:  src
   exposed-modules: Demo.Validation

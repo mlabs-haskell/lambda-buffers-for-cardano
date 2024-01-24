@@ -5,8 +5,7 @@ import LambdaBuffers.Runtime.Plutarch ()
 import LambdaBuffers.Runtime.Plutarch.LamVal (pfromPlutusDataPTryFrom)
 import Plutarch (ClosedTerm, perror, plam, pmatch, popaque, unTermCont, (#))
 import Plutarch.Api.V2 qualified as V2
-import Plutarch.Extra.TermCont (pletC, ptraceC)
-import Plutarch.Prelude (PEq ((#==)), pconstant, pfromData, pif, pnot, pshow, ptrace)
+import Plutarch.Prelude (PEq ((#==)), pconstant, pfromData, pif, pletC, pnot, pshow, ptrace, ptraceC)
 
 -- | `eqValidator dat rdmr ctx` checks whether the Datum `dat` is (not)equal to the Datum supplied in Redeemer.
 eqValidator :: ClosedTerm V2.PValidator

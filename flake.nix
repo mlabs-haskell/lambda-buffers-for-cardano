@@ -13,17 +13,15 @@
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
 
     lbf.url = "github:mlabs-haskell/lambda-buffers";
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix/110460f79c2e08e69f2f095458a556148d8c3f44";
+    flake-lang.url = "github:mlabs-haskell/flake-lang.nix/26e94d19b449c9f944647eaa8c4ebf05209b00ce";
     haskell-nix.follows = "lbf/haskell-nix";
     iohk-nix.follows = "lbf/iohk-nix";
     ctl.follows = "lbf/ctl";
     plutarch.follows = "lbf/plutarch";
     crane.url = "github:ipetkov/crane";
 
-    plutip.url = "github:mlabs-haskell/plutip";
-
-    cardano-node.follows = "plutip/cardano-node";
-    ogmios.url = "github:mlabs-haskell/ogmios-nixos";
+    plutip.url = "github:mlabs-haskell/plutip/1bf0b547cd3689c727586abb8385c008fb2a3d1c";
+    ogmios.url = "github:mlabs-haskell/ogmios-nixos/78e829e9ebd50c5891024dcd1004c2ac51facd80";
   };
 
   outputs = inputs@{ flake-parts, ... }:

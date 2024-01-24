@@ -7,7 +7,8 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::value::Value as JsonValue;
 use std::collections::BTreeMap;
-use std::process::{Child, Command, Stdio};
+use tokio::process::{Child, Command};
+use std::process::Stdio;
 use std::time;
 use uuid::Uuid;
 
@@ -29,6 +30,7 @@ impl Ogmios {
         let handler = Command::new("ogmios")
             .args(args)
             .stdout(Stdio::null())
+            .kill_on_drop(true)
             .spawn()
             .expect("failed to execute ogmios");
 
@@ -43,8 +45,8 @@ impl Ogmios {
         }
     }
 
-    pub fn kill(&mut self) -> Result<(), std::io::Error> {
-        self.handler.kill()
+    pub async fn kill(&mut self) -> Result<(), std::io::Error> {
+        self.handler.kill().await
     }
 
     pub async fn query_utxos(
@@ -274,12 +276,6 @@ impl Ogmios {
             JsonRPCResponse::Success { result, .. } => Ok(result),
             JsonRPCResponse::Error { error, .. } => Err(error),
         }
-    }
-}
-
-impl Drop for Ogmios {
-    fn drop(&mut self) {
-        let _ = self.kill();
     }
 }
 
