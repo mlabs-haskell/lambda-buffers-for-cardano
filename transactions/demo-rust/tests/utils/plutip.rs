@@ -137,6 +137,7 @@ impl Plutip {
         }
     }
 
+    /// Fetch Plutip info (node socket path, wallet pkh, etc.)
     fn fetch_info(path: &str) -> PlutipInfo {
         let info_str = fs::read_to_string(path)
             .expect(&format!("Couldn't read Plutip info JSON file at {}.", path));
@@ -145,6 +146,7 @@ impl Plutip {
             .expect(&format!("Couldn't deserialize JSON data of file {}", path))
     }
 
+    /// Get the private key used by Plutip
     pub fn get_priv_key(&self) -> PrivateKey {
         let path = format!(
             "{}/signing-key-{}.skey",
@@ -167,10 +169,12 @@ impl Plutip {
         PrivateKey::from_normal_bytes(&bytes).unwrap()
     }
 
+    /// Get the path to the active cardano-node socket
     pub fn get_node_socket(&self) -> String {
         self.info.node_socket.clone()
     }
 
+    /// Get the path cardano-node configuration file
     pub fn get_node_config_path(&self) -> String {
         let mut path = fs::canonicalize(&self.info.node_socket).unwrap();
         path.pop();
@@ -181,11 +185,13 @@ impl Plutip {
         path.to_str().unwrap().to_string()
     }
 
+    /// Kill plutip process
     pub async fn kill(&mut self) -> Result<(), std::io::Error> {
         self.cleanup()?;
         self.handler.kill().await
     }
 
+    /// Cleanup all resources used by plutip
     pub fn cleanup(&mut self) -> Result<(), std::io::Error> {
         fs::remove_file(&self.config.dump_path)?;
         fs::remove_dir_all(&self.config.wallets_dir)

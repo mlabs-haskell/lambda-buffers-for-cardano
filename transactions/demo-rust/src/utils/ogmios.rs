@@ -12,6 +12,7 @@ use std::process::Stdio;
 use std::time;
 use uuid::Uuid;
 
+/// Ogmios client for interacting with the blockchain
 pub struct Ogmios {
     handler: Child,
     config: OgmiosConfig,
@@ -45,10 +46,12 @@ impl Ogmios {
         }
     }
 
+    /// Kill ogmios process
     pub async fn kill(&mut self) -> Result<(), std::io::Error> {
         self.handler.kill().await
     }
 
+    /// Query UTxOs at an address
     pub async fn query_utxos(
         &self,
         address: &Address,
@@ -75,6 +78,7 @@ impl Ogmios {
             .collect()
     }
 
+    /// Query cost models for all languages
     pub async fn query_costmdls(&self) -> csl::plutus::Costmdls {
         let resp = self
             .request::<(), QueryLedgerStateProtocolParametersResponse>(
@@ -101,11 +105,13 @@ impl Ogmios {
         costmdls
     }
 
+    /// Wait for transaction confirmation on the chain
     pub async fn await_tx_confirm(&self, _tx_hash: &csl::crypto::TransactionHash) {
         // TODO: implement this
         tokio::time::sleep(std::time::Duration::from_secs(10)).await;
     }
 
+    /// Evaluate a transaction and return execution budgets for each script
     pub async fn evaluate_transaction(
         &self,
         tx_builder: &csl::tx_builder::TransactionBuilder,
@@ -156,6 +162,8 @@ impl Ogmios {
             .collect()
     }
 
+    /// Balance transaction, add any change if needed, and calculate script data hash (integrity
+    /// hash)
     pub fn balance_transaction(
         &self,
         mut tx_builder: csl::tx_builder::TransactionBuilder,
@@ -192,6 +200,7 @@ impl Ogmios {
         tx_builder.build().unwrap()
     }
 
+    /// Submit a fully build and balanced tranasaction
     pub async fn submit_transaction(&self, tx: &csl::Transaction) -> csl::crypto::TransactionHash {
         let params = SubmitTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
@@ -206,6 +215,9 @@ impl Ogmios {
         csl::crypto::TransactionHash::from_hex(&resp.transaction.id).unwrap()
     }
 
+    /// Takes over a partially built transaction and prepares it for submitting, by
+    /// balancing, adding any required change and calculating script data hash, finally
+    /// submitting to the chain (does not wait for confirmation)
     pub async fn balance_sign_and_submit_transacton(
         &self,
         tx_builder: csl::tx_builder::TransactionBuilder,
@@ -247,6 +259,9 @@ impl Ogmios {
         self.submit_transaction(&tx).await
     }
 
+    /// Make a request to ogmios JSON RPC
+    /// Ogmios slightly deviates from the JSON RPC standard, so I couldn't use a 3rd party library
+    /// for this
     async fn request<T, U>(&self, method: &str, params: Option<T>) -> Result<U, JsonRPCError>
     where
         T: Serialize,
@@ -357,7 +372,7 @@ impl TryFrom<&Utxo> for csl::TransactionOutput {
             .and_then(|x| x.get("lovelace"))
             .unwrap_or(&0);
 
-        // TODO(szg251): This whole thing
+        // TODO(szg251): This whole thing (currently doesn't parse native tokens)
         let assets = csl::MultiAsset::new();
 
         let mut tx_builder = TransactionOutputBuilder::new();

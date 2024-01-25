@@ -17,6 +17,8 @@ pub mod utils;
 const COINS_PER_UTXO_WORD: u64 = 34_482;
 
 /// Transaction that stores a EqDatum value at the Eq Validator.
+///
+/// This is a pure function to build a transaction scaffold.
 pub fn mk_lock_tx(
     own_pkh: &Ed25519KeyHash,
     validator_addr: &csl::address::Address,
@@ -55,9 +57,11 @@ pub fn mk_lock_tx(
     tx_builder
 }
 
-// Make a transaction that releases UTxO stored at the `EqValidator` in one of the cases below:
-// - redeemer is `IsEqual` and the supplied plutus data is equal to the one locked as datum
-// - redeemer is `IsNotEqual` and the supplied plutus data is not equal to the one locked as datum
+/// Make a transaction that releases UTxO stored at the `EqValidator` in one of the cases below:
+/// - redeemer is `IsEqual` and the supplied plutus data is equal to the one locked as datum
+/// - redeemer is `IsNotEqual` and the supplied plutus data is not equal to the one locked as datum
+///
+/// This is a pure function to build a transaction scaffold.
 pub fn mk_claim_tx(
     own_pkh: &Ed25519KeyHash,
     own_addr: &csl::address::Address,
@@ -118,6 +122,7 @@ pub fn mk_claim_tx(
     tx_builder
 }
 
+/// Builds and submits `mk_lock_tx`
 pub async fn lock_tx_build_and_submit(
     wallet: &impl Wallet,
     ogmios: &Ogmios,
@@ -151,6 +156,7 @@ pub async fn lock_tx_build_and_submit(
         .await
 }
 
+/// Builds and submits `mk_claim_tx`
 pub async fn claim_tx_build_and_submit(
     wallet: &impl Wallet,
     ogmios: &Ogmios,
