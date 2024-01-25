@@ -13,7 +13,7 @@
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
 
     lbf.url = "github:mlabs-haskell/lambda-buffers";
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix/26e94d19b449c9f944647eaa8c4ebf05209b00ce";
+    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
     haskell-nix.follows = "lbf/haskell-nix";
     iohk-nix.follows = "lbf/iohk-nix";
     ctl.follows = "lbf/ctl";
