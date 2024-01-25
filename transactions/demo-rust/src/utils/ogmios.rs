@@ -227,10 +227,6 @@ impl Ogmios {
                     &csl::plutus::RedeemerTag::new_spend(),
                     &csl::utils::to_bignum(0),
                     &redeemer_data,
-                    // &csl::plutus::ExUnits::new(
-                    //     &csl::utils::to_bignum(1),
-                    //     &csl::utils::to_bignum(2),
-                    // ),
                     &ex_units[idx], // TODO: This is wrong, ex units should be matched by their validator pointers
                 )
             })
