@@ -17,5 +17,5 @@
     };
   };
 
-  herculesCI.ciSystems = [ "x86_64-linux" "x86_64-darwin" ];
+  herculesCI.ciSystems = [ "x86_64-linux" ]; # TODO(szg251): fix darwin CI build and add "x86_64-darwin"
 }
