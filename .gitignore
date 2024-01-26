@@ -26,3 +26,4 @@ cabal.project.local~
 .extras
 .spago/
 node_modules/
+/result

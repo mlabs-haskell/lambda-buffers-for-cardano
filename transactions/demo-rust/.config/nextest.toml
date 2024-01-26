@@ -1,0 +1,5 @@
+[profile.default]
+test-threads = 1
+
+[profile.release]
+test-threads = 1
