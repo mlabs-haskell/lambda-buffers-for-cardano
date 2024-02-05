@@ -3,7 +3,7 @@
   perSystem = { pkgs, pkgsForCtl, config, system, inputs', ... }:
 
     let
-      pursFlake = inputs.lbf.lib.${system}.purescriptFlake {
+      pursFlake = inputs.flake-lang.lib."${system}".purescriptFlake {
         src = ./.;
         projectName = "demo-ctl";
         strictComp = true;

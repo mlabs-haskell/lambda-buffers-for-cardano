@@ -2,7 +2,7 @@
 {
   perSystem = { config, system, pkgs, inputs', ... }:
     let
-      hsFlake = inputs.lbf.lib.${system}.haskellPlutusFlake {
+      hsFlake = inputs.flake-lang.lib."${system}".haskellPlutusFlake {
         src = ./.;
 
         name = "demo-plutustx";
