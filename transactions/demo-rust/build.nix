@@ -29,32 +29,14 @@
 
           extraSources = [
             # LB base schema and runtime libs
-            {
-              name = "lbf-prelude";
-              path = inputs'.lbf.packages.lbf-prelude-rust;
-            }
-            {
-              name = "lbf-plutus";
-              path = inputs'.lbf.packages.lbf-plutus-rust;
-            }
-            {
-              name = "lbr-prelude";
-              path = inputs'.lbf.packages.lbr-prelude-rust-src;
-            }
-            {
-              name = "lbr-prelude-derive";
-              path = inputs'.lbf.packages.lbr-prelude-derive-rust-src;
-            }
+            inputs'.lbf.packages.lbf-prelude-rust
+            inputs'.lbf.packages.lbf-plutus-rust
+            inputs'.lbf.packages.lbr-prelude-rust-src
+            inputs'.lbf.packages.lbr-prelude-derive-rust-src
 
             # Demo API
-            {
-              name = "lbf-demo-config-api";
-              path = config.packages.lbf-demo-config-api-rust;
-            }
-            {
-              name = "lbf-demo-plutus-api";
-              path = config.packages.lbf-demo-plutus-api-rust;
-            }
+            config.packages.lbf-demo-config-api-rust
+            config.packages.lbf-demo-plutus-api-rust
           ];
 
           data = [
