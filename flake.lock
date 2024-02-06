@@ -18579,16 +18579,15 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1707229382,
+        "lastModified": 1707231247,
         "narHash": "sha256-jVt2cS6vsr/1JTHkIN2v0T+OGwMPhoVQtJ6AGp1dcu4=",
         "owner": "mlabs-haskell",
         "repo": "flake-lang.nix",
-        "rev": "441dca2603f2ca66fa0e7ba0e5d1ae9f4ee11423",
+        "rev": "a6eb7054876bc8bf3ec1fb4245f21d405d2ba6ae",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "bladyjoker/isolate-rust-tools",
         "repo": "flake-lang.nix",
         "type": "github"
       }

@@ -13,7 +13,7 @@
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
 
     lbf.url = "github:mlabs-haskell/lambda-buffers";
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix?ref=bladyjoker/isolate-rust-tools";
+    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
     ctl.follows = "flake-lang/ctl";
     plutarch.follows = "flake-lang/plutarch";
     crane.url = "github:ipetkov/crane";
