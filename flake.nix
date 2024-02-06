@@ -16,6 +16,8 @@
     flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
     ctl.follows = "flake-lang/ctl";
     plutarch.follows = "flake-lang/plutarch";
+    haskell-nix.follows = "flake-lang/haskell-nix";
+    iohk-nix.follows = "flake-lang/iohk-nix";
     crane.url = "github:ipetkov/crane";
 
     plutip.url = "github:mlabs-haskell/plutip/1bf0b547cd3689c727586abb8385c008fb2a3d1c";

@@ -65417,7 +65417,15 @@
         ],
         "flake-lang": "flake-lang",
         "flake-parts": "flake-parts_5",
+        "haskell-nix": [
+          "flake-lang",
+          "haskell-nix"
+        ],
         "hci-effects": "hci-effects_2",
+        "iohk-nix": [
+          "flake-lang",
+          "iohk-nix"
+        ],
         "lbf": "lbf",
         "nixpkgs": "nixpkgs_439",
         "ogmios": "ogmios_11",
