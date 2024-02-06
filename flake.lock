@@ -18579,11 +18579,11 @@
         "rust-overlay": "rust-overlay_6"
       },
       "locked": {
-        "lastModified": 1707227450,
-        "narHash": "sha256-+SI4zeNzLDW5uZvYOrSZpUahvOBLF/l8ZtS4+rckm24=",
+        "lastModified": 1707229382,
+        "narHash": "sha256-jVt2cS6vsr/1JTHkIN2v0T+OGwMPhoVQtJ6AGp1dcu4=",
         "owner": "mlabs-haskell",
         "repo": "flake-lang.nix",
-        "rev": "849ff83201fa6669f8b6ac3209255c297babf783",
+        "rev": "441dca2603f2ca66fa0e7ba0e5d1ae9f4ee11423",
         "type": "github"
       },
       "original": {
@@ -59586,11 +59586,11 @@
     },
     "nixpkgs_439": {
       "locked": {
-        "lastModified": 1707224753,
-        "narHash": "sha256-XGgoGHGcC3ckQLUKRKIUX30xq6LBeYcQToqUY4H+CwI=",
+        "lastModified": 1707230635,
+        "narHash": "sha256-rVzwB3XTu7t8996D7cOGJDaMsaeW+vcgy2GZA409qE4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "5014390117d9f3e034deadc857ba1b3baa953b92",
+        "rev": "4b7b55006ee684b12b86421b523028f55e6c6cf1",
         "type": "github"
       },
       "original": {
@@ -65413,25 +65413,17 @@
       "inputs": {
         "crane": "crane",
         "ctl": [
-          "lbf",
+          "flake-lang",
           "ctl"
         ],
         "flake-lang": "flake-lang",
         "flake-parts": "flake-parts_5",
-        "haskell-nix": [
-          "lbf",
-          "haskell-nix"
-        ],
         "hci-effects": "hci-effects_2",
-        "iohk-nix": [
-          "lbf",
-          "iohk-nix"
-        ],
         "lbf": "lbf",
         "nixpkgs": "nixpkgs_439",
         "ogmios": "ogmios_11",
         "plutarch": [
-          "lbf",
+          "flake-lang",
           "plutarch"
         ],
         "plutip": "plutip_6",

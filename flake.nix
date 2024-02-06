@@ -14,10 +14,8 @@
 
     lbf.url = "github:mlabs-haskell/lambda-buffers";
     flake-lang.url = "github:mlabs-haskell/flake-lang.nix?ref=bladyjoker/isolate-rust-tools";
-    haskell-nix.follows = "lbf/haskell-nix";
-    iohk-nix.follows = "lbf/iohk-nix";
-    ctl.follows = "lbf/ctl";
-    plutarch.follows = "lbf/plutarch";
+    ctl.follows = "flake-lang/ctl";
+    plutarch.follows = "flake-lang/plutarch";
     crane.url = "github:ipetkov/crane";
 
     plutip.url = "github:mlabs-haskell/plutip/1bf0b547cd3689c727586abb8385c008fb2a3d1c";
@@ -27,7 +25,6 @@
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
-        ./pkgs.nix
         ./settings.nix
         ./pre-commit.nix
         ./hercules-ci.nix
