@@ -13906,9 +13906,19 @@
           "lbf",
           "flake-parts"
         ],
+        "haskell-nix": [
+          "lbf",
+          "flake-lang",
+          "haskell-nix"
+        ],
         "hci-effects": [
           "lbf",
           "hci-effects"
+        ],
+        "iohk-nix": [
+          "lbf",
+          "flake-lang",
+          "iohk-nix"
         ],
         "lbf": "lbf",
         "nixpkgs": [
