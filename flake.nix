@@ -1,24 +1,35 @@
 {
   description = "LambdaBuffers Cardano Demo";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
+    # NOTE(bladyjoker): Trying to reuse as many inputs from lbf and flake-lang as possible to reduce the flake.lock size which impacts performance significantly.
+    nixpkgs.follows = "lbf/nixpkgs";
 
-    # Flakes as modules, using this extensively to organize the repo into modules (build.nix files)
-    flake-parts.url = "github:hercules-ci/flake-parts";
+    # LambdaBuffers for sharing types
+    lbf.url = "github:mlabs-haskell/lambda-buffers";
+
+    # flake-lang.nix for monorepo setup
+    flake-lang.follows = "lbf/flake-lang";
+
+    # flake-parts for Flake modules
+    flake-parts.follows = "lbf/flake-parts";
 
     # Hercules CI effects
-    hci-effects.url = "github:hercules-ci/hercules-ci-effects";
+    hci-effects.follows = "lbf/hci-effects";
 
     # Code quality automation
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.follows = "lbf/pre-commit-hooks";
 
-    lbf.url = "github:mlabs-haskell/lambda-buffers";
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
-    haskell-nix.follows = "lbf/haskell-nix";
-    iohk-nix.follows = "lbf/iohk-nix";
+    # Cardano transaction library
     ctl.follows = "lbf/ctl";
+    haskell-nix.follows = "lbf/flake-lang/haskell-nix";
+    iohk-nix.follows = "lbf/flake-lang/iohk-nix";
+
+    # Plutarch eDSL
     plutarch.follows = "lbf/plutarch";
-    crane.url = "github:ipetkov/crane";
+
+    # TODO(bladyjoker): Remove this once fixed in flake-lang.nix
+    crane.follows = "lbf/crane";
+
 
     plutip.url = "github:mlabs-haskell/plutip/1bf0b547cd3689c727586abb8385c008fb2a3d1c";
     ogmios.url = "github:mlabs-haskell/ogmios-nixos/78e829e9ebd50c5891024dcd1004c2ac51facd80";

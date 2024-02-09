@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lbf-prelude = { path = ".extras/lbf-prelude" }
-lbf-demo-config-api = { path = ".extras/lbf-demo-config-api" }
-lbf-demo-plutus-api = { path = ".extras/lbf-demo-plutus-api" }
+lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
+lbf-demo-config-api = { path = ".extras/lbf-demo-config-api-0.1.0" }
+lbf-demo-plutus-api = { path = ".extras/lbf-demo-plutus-api-0.1.0" }
 cardano-serialization-lib = "11.5.0"
 plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", features = [
   "lbf",
@@ -14,7 +14,7 @@ plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-
 num-bigint = { version = "0.4.4", features = ["serde"] }
 num-integer = "0.1.45"
 linked-hash-map = "0.5.6"
-lbr-prelude = { path = ".extras/lbr-prelude", features = ["derive"] }
+lbr-prelude = { path = ".extras/lbr-prelude-0.1.0", features = ["derive"] }
 serde_json = { version = "1.0.111", features = ["raw_value"] }
 serde = "1.0.195"
 derive_builder = "0.12.0"
