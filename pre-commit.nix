@@ -25,6 +25,14 @@
             markdownlint.enable = true;
             dhall-format.enable = true;
             purty.enable = true;
+            denolint.enable = true;
+            denofmt = {
+              enable = true;
+              # Note(jaredponn): We follow the default files this formats, except
+              # we exclude markdown files. See  
+              #   [1] https://docs.deno.com/runtime/manual/tools/formatter
+              files = ''^.*\.(js|ts|jsx|tsx|json|jsonc)$'';
+            };
           };
 
           settings = {
