@@ -89,7 +89,7 @@ ogmios \
     &
 
 ###########################
-# Creating a configuration file for the typescript application
+# Creating a configuration file for the TS application
 ###########################
 export DEMO_RTS_CONFIG_JSON="./demo-rtsconfig.json"
 
