@@ -1,10 +1,12 @@
 { inputs, ... }: {
-  perSystem = { config, inputs', system, ... }:
+  perSystem = { config, inputs', system, pkgs, ... }:
     let
-      # demoRts = pkgs.writeShellApplication {
-      #   name = "demo-rts";
-      #   runtimeInputs = [ ];
-      # };
+      demoRts = pkgs.writeShellApplication {
+        name = "demo-rts";
+        runtimeInputs =
+          [ pkgs.jq inputs'.plutip.packages."plutip-core:exe:local-cluster" inputs'.ogmios.packages."ogmios:exe:ogmios" ];
+        text = builtins.readFile ./demo-rts.sh;
+      };
 
       tsFlake = inputs.flake-lang.lib."${system}".typescriptFlake
         rec
@@ -15,6 +17,7 @@
           testTools = [
             inputs'.plutip.packages."plutip-core:exe:local-cluster"
             inputs'.ogmios.packages."ogmios:exe:ogmios"
+            demoRts
           ];
 
           npmExtraDependencies = [
@@ -45,5 +48,8 @@
     in
     {
       inherit (tsFlake) checks devShells;
+      packages = {
+        demo-rts-typescript = demoRts;
+      };
     };
 }
