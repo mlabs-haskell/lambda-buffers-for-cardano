@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { after, before, describe, it } from "node:test";
 import * as DemoConfig from "lbf-demo-config-api/LambdaBuffers/Demo/Config.mjs";
 import * as LbrPrelude from "lbr-prelude";
 import * as LbrPlutusV1 from "lbr-plutus/V1.js";
@@ -7,7 +7,9 @@ import * as PlaV1 from "plutus-ledger-api/V1.js";
 import * as PlaPd from "plutus-ledger-api/PlutusData.js";
 import * as PreludeJson from "prelude/Json.js";
 import { EqDatum } from "lbf-demo-plutus-api/LambdaBuffers/Demo/Plutus.mjs";
+import { ChildProcess, spawn } from "node:child_process";
 import { cslPlutusDataToPlaPlutusData } from "../lib/utils.js";
+import { initRtsConfig } from "../lib/rtsconfig.js";
 import {
   awaitTransaction,
   createValueTx,
@@ -23,10 +25,65 @@ import * as fs from "node:fs/promises";
  * The test suite!
  *
  * Notes:
- *  - We assume that in the background we already have a cardano node running
- *    with ogmios hooked up to it. See the `./build.nix` for details
+ *  - We run the CLI command `demo-rts`, and use the configuration file it
+ *    provides to run the show.
+ *
+ *  - Then, we run all the tests
  */
 describe(`Typescript demo tests`, () => {
+  /*
+   * Start the runtime services by executing `demo-rts`
+   */
+  let demoRts: ChildProcess = undefined as unknown as ChildProcess;
+  const demoRtsAbortController = new AbortController();
+
+  // Start `demo-rts`
+  // NOTE(jaredponn): we use the same cluster for all tests
+  before(async () => {
+    console.log(`Starting \`demo-rts\``);
+    demoRts = spawn("demo-rts", [], {
+      stdio: ["ignore", "pipe", "ignore"],
+      signal: demoRtsAbortController.signal,
+      killSignal: "SIGTERM",
+    });
+
+    // If demoRts fails, throw an error (unless we abort it manually)
+    demoRts.on("error", (err) => {
+      if (err.name === "AbortError") {
+        return;
+      } else {
+        throw err;
+      }
+    });
+
+    await new Promise((resolve) => {
+      demoRts.stdout!.on(`data`, (data) => {
+        resolve(data);
+      });
+    });
+
+    await initRtsConfig("./demo-rtsconfig.json");
+  });
+
+  // Kill `demo-rts` when all the tests are done.
+  after(async () => {
+    await new Promise((resolve, reject) => {
+      demoRts.on("close", (code, signal) => {
+        if (signal === "SIGTERM") {
+          return resolve(true);
+        } else if (code === 0) {
+          return resolve(true);
+        } else {
+          reject(code);
+        }
+      });
+      demoRtsAbortController.abort();
+    });
+  });
+
+  /*
+   * Plutarch tests
+   */
   it(`Plutarch`, async () => {
     const demoPlutarchConfig = await readDemoConfig(
       "data/demo-plutarch-config.json",
@@ -47,6 +104,9 @@ describe(`Typescript demo tests`, () => {
     return;
   });
 
+  /*
+   * PlutusTx tests
+   */
   it(`PlutusTx`, async () => {
     // Grab the plutarch config (we still need this to generate the example data)
     const demoPlutarchConfig = await readDemoConfig(

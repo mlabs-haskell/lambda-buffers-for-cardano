@@ -3,11 +3,14 @@
 # This shell script does the following.
 #   1. Starts `local-cluster` (plutip) where logs are dumped to to stderr and
 #      `./local-cluster.log`.
-#      Note that we retain plutip's `./local-cluster-info.json`
+#      Note that we keep plutip's `./local-cluster-info.json`
 #   2. Starts `ogmios` on host 127.0.0.1 with port 1337 where logs are dumped
 #      to stderr and `ogmios.log`
-#   3. Dumps a config file (compatible with the Typescript application) to
-#      `./demo-rtsconfig.json`
+#   3. Dumps a config file (compatible with the the `demo-rts` Typescript
+#   application) to `./demo-rtsconfig.json`.
+#   It also dumps this config file to stdout (and is the only thing that is
+#   dumped to stdout, so blocking reads on stdout can be used to detect when
+#   everything is ready)
 
 
 # References:
@@ -34,7 +37,7 @@ rm -f "$LOCAL_CLUSTER_INFO_JSON" && touch "$LOCAL_CLUSTER_INFO_JSON"
 export NODE_SOCKET="/tmp/"
 
 # Start the local cluster in the background
-2>&1 echo "demo-rts: starting plutip (local-cluster) logging to ./local-cluster.log"
+1>&2 echo "demo-rts: starting plutip (local-cluster) logging to ./local-cluster.log"
 local-cluster \
     --num-wallets 1 \
     --wallet-dir "$WALLET_DIR" \
@@ -50,14 +53,14 @@ export NODE_SOCKET="$NODE_WORKING_DIR/pool-1/node.socket"
 
 until test -S "$NODE_SOCKET"
 do
-    2>&1 echo "demo-rts: waiting for \`local-cluster\` to be ready"
+    1>&2 echo "demo-rts: waiting for \`local-cluster\` to be ready"
     sleep 1
 done
 
 # Busy loop wait until the private keys exist
 while test -z "$(find "$WALLET_DIR" -iname "*.skey")"
 do
-    2>&1 echo "demo-rts: waiting for private keys to be ready"
+    1>&2 echo "demo-rts: waiting for private keys to be ready"
     sleep 1
 done
 
@@ -75,7 +78,7 @@ SIGNING_KEY_CBOR_HEX=$(
 export OGMIOS_PORT="1337"
 export OGMIOS_HOST="127.0.0.1"
 
-2>&1 echo "demo-rts: starting ogmios in the background with host \`$OGMIOS_HOST\` on port \`$OGMIOS_PORT\` logging to ./ogmios.log"
+1>&2 echo "demo-rts: starting ogmios in the background with host \`$OGMIOS_HOST\` on port \`$OGMIOS_PORT\` logging to ./ogmios.log"
 # shellcheck disable=SC2001
 ogmios \
     --host "$OGMIOS_HOST" \
@@ -90,12 +93,12 @@ ogmios \
 ###########################
 export DEMO_RTS_CONFIG_JSON="./demo-rtsconfig.json"
 
-2>&1 echo "demo-rts: creating \`$DEMO_RTS_CONFIG_JSON\`"
+1>&2 echo "demo-rts: creating \`$DEMO_RTS_CONFIG_JSON\`"
 jq -n '{ ogmios: { host: $ogmiosHost, port: $ogmiosPort }, signingKeyCborHex: $signingKey }' \
     --arg ogmiosHost "$OGMIOS_HOST" \
     --arg ogmiosPort "$OGMIOS_PORT" \
     --arg signingKey "$SIGNING_KEY_CBOR_HEX" \
-    > "$DEMO_RTS_CONFIG_JSON"
+    | tee "$DEMO_RTS_CONFIG_JSON"
 
 ###########################
 # Wait for plutip + ogmios to finish (they will never finish)
