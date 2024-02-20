@@ -5,7 +5,7 @@ import {
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import { cborHexPrivateKey } from "./utils.js";
 
-export interface Config {
+export interface RtsConfig {
   ogmios: {
     host: string;
     port: number;
@@ -72,7 +72,7 @@ function getSigningKeyAddress() {
 /**
  * Global configuration of the application
  */
-export const config: Config = {
+export const rtsConfig: RtsConfig = {
   ogmios: {
     host: getOgmiosHost(),
     port: getOgmiosPort(),
@@ -83,7 +83,7 @@ export const config: Config = {
 
 /** */
 export async function ogmiosCreateContext(): Promise<InteractionContext> {
-  const ogmios = config.ogmios;
+  const ogmios = rtsConfig.ogmios;
   const context = await createInteractionContext(
     (err) => {
       throw err;

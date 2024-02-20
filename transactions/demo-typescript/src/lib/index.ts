@@ -6,7 +6,7 @@ import {
   EqRedeemer,
 } from "lbf-demo-plutus-api/LambdaBuffers/Demo/Plutus.mjs";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
-import { config, ogmiosCreateContext } from "./config.js";
+import { ogmiosCreateContext, rtsConfig } from "./rtsconfig.js";
 import {
   createLedgerStateQueryClient,
   createTransactionSubmissionClient,
@@ -166,9 +166,9 @@ export async function createValueTx(
     eqDatum: EqDatum;
   },
 ): Promise<csl.Transaction> {
-  const sk = config.signingKey;
-  const skAddress = config.signingKeyAddress;
-  const changeAddress = config.signingKeyAddress;
+  const sk = rtsConfig.signingKey;
+  const skAddress = rtsConfig.signingKeyAddress;
+  const changeAddress = rtsConfig.signingKeyAddress;
   const { transactionBuilder, protocolParameters } = await createTxBuilder();
 
   const eqDatumPd = plaPlutusDataToCslPlutusData(
@@ -294,9 +294,9 @@ export async function inputValueTx(
     eqRedeemer: EqRedeemer;
   },
 ): Promise<csl.Transaction> {
-  const sk = config.signingKey;
-  const skAddress = config.signingKeyAddress;
-  const changeAddress = config.signingKeyAddress;
+  const sk = rtsConfig.signingKey;
+  const skAddress = rtsConfig.signingKeyAddress;
+  const changeAddress = rtsConfig.signingKeyAddress;
 
   const availableInputs = await queryAddressUtxos(skAddress);
   const costModel = await queryCostmdls();
