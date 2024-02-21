@@ -1,21 +1,35 @@
 #!/bin/sh
 
+# DESCRIPTION
+#
 # This shell script does the following.
 #   1. Starts `local-cluster` (plutip) where logs are dumped to to stderr and
 #      `./local-cluster.log`.
 #      Note that we keep plutip's `./local-cluster-info.json`
 #   2. Starts `ogmios` on host 127.0.0.1 with port 1337 where logs are dumped
 #      to stderr and `ogmios.log`
-#   3. Dumps a config file (compatible with the the `demo-rts` Typescript
-#   application) to `./demo-rtsconfig.json`.
-#   It also dumps this config file to stdout (and is the only thing that is
-#   dumped to stdout, so blocking reads on stdout can be used to detect when
-#   everything is ready)
-
-
-# References:
+#   3. Dumps a config file (compatible with the the demo Typescript
+#      application) to `./demo-rtsconfig.json` and stdout.
+#
+#  Note that the config file is dumped to stdout, and is the only thing that is
+#  dumped to stdout, so blocking reads on stdout can be used to detect when
+#  everything is ready)
+#
+# ENVIRONMENT
+#   - `ADA`: the total number of ADA per UTxO to start the cluter with
+#   (default: 69420). See [1].
+#   - `UTXOS`: the total number of UTxOs with amount `$ADA`. (default: 1). See
+#     [1]
+#
+# REFERENCES
 # [1]: Plutip's `local-cluster` CLI reference:
 #      https://github.com/mlabs-haskell/plutip/blob/master/local-cluster/README.md
+
+export ADA="${ADA:-69420}"
+export UTXOS="${UTXOS:-1}"
+
+# Ensure we kill all the background processes (plutip + ogmios) when we exit
+trap 'trap - EXIT && kill -- -$$ && exit 0' EXIT
 
 ###########################
 # Setting up the plutip cluster
@@ -30,11 +44,7 @@ export LOCAL_CLUSTER_INFO_JSON="./local-cluster-info.json"
 
 # Ensure $LOCAL_CLUSTER_INFO_JSON exists because plutip doesn't like it if this
 # file doesn't already exist.
-# Note we initial remove $LOCAL_CLUSTER_INFO_JSON so the busy loop (to wait for
-# the node is initialized) will wait if the file exists already.
-rm -f "$LOCAL_CLUSTER_INFO_JSON" && touch "$LOCAL_CLUSTER_INFO_JSON"
-
-export NODE_SOCKET="/tmp/"
+touch "$LOCAL_CLUSTER_INFO_JSON"
 
 # Start the local cluster in the background
 1>&2 echo "demo-rts: starting plutip (local-cluster) logging to ./local-cluster.log"
@@ -43,10 +53,13 @@ local-cluster \
     --wallet-dir "$WALLET_DIR" \
     --working-dir "$NODE_WORKING_DIR" \
     --dump-info-json "$LOCAL_CLUSTER_INFO_JSON" \
-    --ada 694200 \
-    --utxos 1 \
+    --ada "$ADA" \
+    --utxos "$UTXOS" \
     2>&1 | tee local-cluster.log 1>&2 \
     &
+
+# NOTE(jaredponn): by observation from plutip, we observe that the `pool-1`
+# directory exists with the data we wait for in the following lines.
 
 # Busy loop wait until the socket exists and is ready
 export NODE_SOCKET="$NODE_WORKING_DIR/pool-1/node.socket"
@@ -89,7 +102,7 @@ ogmios \
     &
 
 ###########################
-# Creating a configuration file for the TS application
+# Creating a runtime configuration file for the TS application
 ###########################
 export DEMO_RTS_CONFIG_JSON="./demo-rtsconfig.json"
 

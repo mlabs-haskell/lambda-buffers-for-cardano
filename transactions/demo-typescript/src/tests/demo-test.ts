@@ -20,71 +20,78 @@ import {
 } from "../lib/index.js";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import * as fs from "node:fs/promises";
+import process from "node:process";
 
 /*
  * The test suite!
  *
  * Notes:
- *  - We run the CLI command `demo-rts`, and use the configuration file it
- *    provides to run the show.
+ *  - If one sets the environment variable `TEST_RTS_CONFIG`, the file
+ *    `$TEST_RTS_CONFIG` will be used in {@link initRtsConfig}.
  *
- *  - Then, we run all the tests
+ *  - Otherwise, this will run the CLI command `demo-rts` (which starts all the
+ *    runtime services), and use the configuration file `demo-rts` provides to
+ *    run the show.
+ *
+ *  - In either case, we run all the tests afterwards.
  */
-describe(`Typescript demo tests`, () => {
+describe(`Typescript demo tests`, async () => {
   /*
-   * Start the runtime services by executing `demo-rts`
+   * Start the runtime services by executing `demo-rts` (or use the existence
+   * runtime services if `TEST_RTS_CONFIG` is set)
    */
   let demoRts: ChildProcess = undefined as unknown as ChildProcess;
-  const demoRtsAbortController = new AbortController();
+  const testRtsConfigFilePath = process.env[`TEST_RTS_CONFIG`];
+
+  function killDemoRts() {
+    if (demoRts.killed === false) {
+      process.kill(-demoRts.pid!, "SIGTERM");
+    }
+  }
 
   // Start `demo-rts`
   // NOTE(jaredponn): we use the same cluster for all tests
   before(async () => {
-    console.log(`Starting \`demo-rts\``);
-    demoRts = spawn("demo-rts", [], {
-      stdio: ["ignore", "pipe", "ignore"],
-      signal: demoRtsAbortController.signal,
-      killSignal: "SIGTERM",
-    });
-
-    // If demoRts fails, throw an error (unless we abort it manually)
-    demoRts.on("error", (err) => {
-      if (err.name === "AbortError") {
-        return;
-      } else {
-        throw err;
-      }
-    });
-
-    await new Promise((resolve) => {
-      demoRts.stdout!.on(`data`, (data) => {
-        resolve(data);
+    if (testRtsConfigFilePath !== undefined) {
+      await initRtsConfig(testRtsConfigFilePath);
+    } else {
+      demoRts = spawn("demo-rts", [], {
+        stdio: ["ignore", "pipe", "ignore"],
+        detached: true,
+        env: Object.assign({ "ADA": "10" }, process.env),
       });
-    });
 
-    await initRtsConfig("./demo-rtsconfig.json");
+      await new Promise((resolve) => {
+        demoRts.stdout!.on(`data`, (data) => {
+          resolve(data);
+        });
+      });
+      await initRtsConfig("./demo-rtsconfig.json");
+    }
   });
 
-  // Kill `demo-rts` when all the tests are done.
   after(async () => {
-    await new Promise((resolve, reject) => {
-      demoRts.on("close", (code, signal) => {
-        if (signal === "SIGTERM") {
-          return resolve(true);
-        } else if (code === 0) {
-          return resolve(true);
-        } else {
-          reject(code);
-        }
+    // Kill `demo-rts` when all the tests are done.
+    if (testRtsConfigFilePath === undefined) {
+      await new Promise((resolve, reject) => {
+        demoRts.on("close", (code, signal) => {
+          if (signal === "SIGTERM") {
+            return resolve(true);
+          } else if (code === 0) {
+            return resolve(true);
+          } else {
+            reject(code);
+          }
+        });
+        killDemoRts();
       });
-      demoRtsAbortController.abort();
-    });
+    }
   });
 
   /*
    * Plutarch tests
    */
-  it(`Plutarch`, async () => {
+  await it(`Plutarch`, async () => {
     const demoPlutarchConfig = await readDemoConfig(
       "data/demo-plutarch-config.json",
     );
@@ -100,14 +107,12 @@ describe(`Typescript demo tests`, () => {
       exampleEqDatumA,
       exampleEqDatumB,
     );
-
-    return;
   });
 
   /*
    * PlutusTx tests
    */
-  it(`PlutusTx`, async () => {
+  await it(`PlutusTx`, async () => {
     // Grab the plutarch config (we still need this to generate the example data)
     const demoPlutarchConfig = await readDemoConfig(
       "data/demo-plutarch-config.json",
@@ -128,8 +133,6 @@ describe(`Typescript demo tests`, () => {
       exampleEqDatumA,
       exampleEqDatumB,
     );
-
-    return;
   });
 });
 
@@ -145,7 +148,7 @@ async function readDemoConfig(path: string): Promise<DemoConfig.Config> {
 
 /**
  * Produces the example data that matches the CTL implementation (provided that
- * the argument `demoPlutarchConfig` really is the demoPlutarchConfig)
+ * the argument `demoPlutarchConfig` really is the demo Plutarch config)
  */
 function exampleData(
   demoPlutarchConfig: DemoConfig.Config,

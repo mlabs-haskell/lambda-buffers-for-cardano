@@ -1,3 +1,6 @@
+// This file includes code for creating the static set once readonly global
+// configuration of the project
+
 import {
   createInteractionContext,
   InteractionContext,

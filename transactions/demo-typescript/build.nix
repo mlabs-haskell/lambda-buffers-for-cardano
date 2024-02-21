@@ -1,3 +1,27 @@
+# DESCRIPTION.
+# - TS demo project based off of the PureScript / Rust project which uses
+#   cardano-serialization-lib and ogmios.
+#   Running the tests requires a JSON *RTS configuration file* -- see
+#   `./src/rtsconfig.ts` for details in the environment variable
+#   `TEST_RTS_CONFIG`.
+#   If this is not provided, the tests will automatically spin everything up
+#   for you.
+#   
+#   Tests may be ran with
+#   ```
+#   npm run test
+#   ```
+#   
+# - The shell script `demo-rts` can be used to start a test RTS (ogmios +
+#   plutip) for you, and it will also provide a RTS configuration file for
+#   running the tests.
+#
+# LIMITATIONS.
+# - The version of cardano-serialization-lib that this uses leaks memory
+#   everywhere. When one uses `cardano-serialization-lib`, one should compile
+#   it themselves (recall `wasm-pack` uses `wasm-bindgen` to compile from Rust
+#   to TS) manually with the flag `--weak-refs` for `wasm-pack` to enable
+#   garbage collection.
 { inputs, ... }: {
   perSystem = { config, inputs', system, pkgs, ... }:
     let

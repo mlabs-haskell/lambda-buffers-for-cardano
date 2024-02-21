@@ -1,3 +1,6 @@
+// This file includes helpful utilities for e.g.
+//
+//  - translating plutus-ledger-api types to cardano-serialization-lib types
 import * as Pla from "plutus-ledger-api/PlutusData.js";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import type { Utxo, Value } from "@cardano-ogmios/schema";
@@ -96,29 +99,6 @@ export function cslPlutusDataToPlaPlutusData(
 }
 
 /**
- * @internal
- */
-function plaPdListToCslPlutusList(list: Pla.PlutusData[]): csl.PlutusList {
-  const result = csl.PlutusList.new();
-
-  for (const elem of list) {
-    result.add(plaPlutusDataToCslPlutusData(elem));
-  }
-  return result;
-}
-
-/**
- * @internal
- */
-function cslPlutusListToPlaPdList(list: csl.PlutusList): Pla.PlutusData[] {
-  const result = [];
-  for (let i = 0; i < list.len(); ++i) {
-    result.push(cslPlutusDataToPlaPlutusData(list.get(i)));
-  }
-  return result;
-}
-
-/**
  * Translates an {@link Value} from ogmios to a {@link csl.Value} from
  * `cardano-serialization-lib`
  */
@@ -176,7 +156,7 @@ export function ogmiosUtxoToCslUtxo(
 
     if (utxo.script !== undefined) {
       if (utxo.script.language === "native") {
-        // TODO(jaredponn): deserialize the cbor instead
+        // TODO(jaredponn): just deserialize the cbor instead
         transactionOutput.set_script_ref(
           csl.ScriptRef.new_native_script(
             csl.NativeScript.from_json(JSON.stringify(utxo.script.json)),
@@ -240,4 +220,27 @@ export function cborHexPrivateKey(cborHex: string) {
     throw new Error(`Invalid secret key`);
   }
   return csl.PrivateKey.from_normal_bytes(prvKeyBytes);
+}
+
+/**
+ * @internal
+ */
+function plaPdListToCslPlutusList(list: Pla.PlutusData[]): csl.PlutusList {
+  const result = csl.PlutusList.new();
+
+  for (const elem of list) {
+    result.add(plaPlutusDataToCslPlutusData(elem));
+  }
+  return result;
+}
+
+/**
+ * @internal
+ */
+function cslPlutusListToPlaPdList(list: csl.PlutusList): Pla.PlutusData[] {
+  const result = [];
+  for (let i = 0; i < list.len(); ++i) {
+    result.push(cslPlutusDataToPlaPlutusData(list.get(i)));
+  }
+  return result;
 }

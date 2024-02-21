@@ -1,10 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 
+// This file includes code for creating the transactions
 import * as LbrPlutus from "lbr-plutus/PlutusData.js";
 import {
   EqDatum,
   EqRedeemer,
 } from "lbf-demo-plutus-api/LambdaBuffers/Demo/Plutus.mjs";
+// WARNING(jaredponn): the npm package released by @emurgo leaks memory
+// everywhere. When one compiles the Rust code using wasm-bindgen, one must
+// compile it with the flag `--weak-refs` s.t. their objects are automatically
+// garbage collected by JS' runtime. @emurgo's npm package does not do this.
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import { ogmiosCreateContext, rtsConfig } from "./rtsconfig.js";
 import {
@@ -33,6 +38,13 @@ function rationalToUnitInterval(str: string) {
   return this.toString();
 };
 
+/**
+ * Creates a {@link csl.TransactionBuilder} and returns the {@link
+ * ProtocolParameters} from the data provided from ogmios.
+ *
+ * @returns A {@link csl.TransactionBuilder} with the protocol parameters from
+ * ogmios + the protocol parameters from ogmios.
+ */
 export async function createTxBuilder(): Promise<
   {
     transactionBuilder: csl.TransactionBuilder;
@@ -65,6 +77,7 @@ export async function createTxBuilder(): Promise<
       // TODO(jaredponn): surely this is a bug (or mismatching ogmios versions)
       // -- the types want this to be at `.ada.lovelace`, but the JSON object
       // returned from ogmios only has `.lovelace`.
+      // Hence, why we cast everything to `any`.
       (params.minFeeConstant as any).lovelace.toString(),
     );
 
@@ -114,8 +127,12 @@ export async function createTxBuilder(): Promise<
 
     const maxTransactionSize = params.maxTransactionSize.bytes;
 
-    // // https://github.com/CardanoSolutions/ogmios/blob/0c16007a936648ee7e924bb305eaa5c24464acff/server/src/Ogmios/Data/Json/Alonzo.hs#L178-L202
-    // // https://cips.cardano.org/cip/CIP-0055
+    /*
+     * See the following snippets for where ogmios renamed
+     *  - `coinsPerUtxoByte` ---> `minUtxoDepositCoefficient`
+     * {@link https://github.com/CardanoSolutions/ogmios/blob/0c16007a936648ee7e924bb305eaa5c24464acff/server/src/Ogmios/Data/Json/Alonzo.hs#L178-L202}
+     * *{@link https://cips.cardano.org/cip/CIP-0055}
+     */
     if (params.minUtxoDepositCoefficient === undefined) {
       throw new Error(
         `Ogmios protocol parameters is missing minUtxoDepositCoefficient`,
@@ -157,8 +174,10 @@ export async function createTxBuilder(): Promise<
 }
 
 /**
- * Returns a transaction builder which has a transaction output at the provided
- * `eqValidatorAddress` with the given `eqDatum`
+ * {@link createValueTx} creates a transaction which has a transaction
+ * output at the provided `eqValidatorAddress` with the given `eqDatum`
+ *
+ * @returns A transaction satisfying the aforementioned properties
  */
 export async function createValueTx(
   { eqValidatorAddress, eqDatum }: {
@@ -240,9 +259,11 @@ export async function createValueTx(
 }
 
 /**
- * {@link inputIsEqualTx}  make a transaction that checks if the {@link
- * EqDatum} stored at the `eqValidator`'s `eqValidatorTxIn` IS equal to the
+ * {@link inputIsEqualTx} makes a transaction that checks if the {@link
+ * EqDatum} stored at the `eqValidator`'s `eqValidatorTxIn` IS EQUAL to the
  * provided one in `eqDatum`.
+ *
+ * @returns A transaction satisfying the aforementioned properties
  */
 export async function inputIsEqualTx(
   { eqValidator, eqValidatorTxIn, eqDatum }: {
@@ -260,9 +281,11 @@ export async function inputIsEqualTx(
 }
 
 /**
- * {@link inputIsNotEqualTx}  make a transaction that checks if the {@link
+ * {@link inputIsNotEqualTx} makes a transaction that checks if the {@link
  * EqDatum} stored at the `eqValidator`'s `eqValidatorTxIn` is NOT equal to the
  * provided one in `eqDatum`.
+ *
+ * @returns A transaction satisfying the aforementioned properties
  */
 export async function inputIsNotEqualTx(
   {
@@ -284,8 +307,10 @@ export async function inputIsNotEqualTx(
 }
 
 /**
- * Returns a transaction which spends an `eqValidatorAddress` at the provided
+ * Computes a transaction which spends an `eqValidatorAddress` at the provided
  * `eqValidatorTxIn` with the provided redeemer `eqRedeemer`
+ *
+ * @returns A transaction satisfying the aforementioned properties
  */
 export async function inputValueTx(
   { eqValidator, eqValidatorTxIn, eqRedeemer }: {
@@ -388,7 +413,9 @@ export async function inputValueTx(
         // TODO(jaredponn): we should choose the collateral
         // properly
         //  - properly calculate how much collateral we should add
-        //  - pick UTxOs which only have ada (requirement from the ledger)
+        //  - pick UTxOs which only have ada (requirement from the ledger) or
+        //    use the fancy new collateral features which relax this
+        //    requirement
         collateralInputsBuilder.add_input(
           skAddress,
           availableInputs.get(0).input(),
@@ -461,8 +488,8 @@ export async function inputValueTx(
         // https://ogmios.dev/mini-protocols/local-tx-submission/#evaluating-transactions
         // for why we increase the costs by 0.05
         return {
-          memory: Math.floor(evalResult.budget.memory * 1.05),
-          cpu: Math.floor(evalResult.budget.cpu * 1.05),
+          memory: Math.ceil(evalResult.budget.memory * 1.05),
+          cpu: Math.ceil(evalResult.budget.cpu * 1.05),
         };
       } catch (e) {
         // rethrow the error stringified s.t. it's easier to debug.
@@ -473,6 +500,8 @@ export async function inputValueTx(
     /*
      * Build the transaction for real with the costs from the previous
      * transaction
+     * WARNING(jaredponn): this is mostly duplicated code from the fake
+     * transaction above.
      */
 
     /*
@@ -514,8 +543,9 @@ export async function inputValueTx(
       // TODO(jaredponn): we should choose the collateral
       // properly
       //  - properly calculate how much collateral we should add
-      //  - pick UTxOs which only have ada (requirement from the ledger)
-      //  - use the return collateral
+      //  - pick UTxOs which only have ada (requirement from the ledger) or
+      //    use the fancy new collateral features which relax this
+      //    requirement
       collateralInputsBuilder.add_input(
         skAddress,
         availableInputs.get(0).input(),
@@ -615,6 +645,12 @@ export async function inputValueTx(
   }
 }
 
+/**
+ * {@link queryAddressUtxos} queries all the UTxOs at the provided address from
+ * ogmios
+ *
+ * @returns the UTxOs at the provided address
+ */
 export async function queryAddressUtxos(
   addr: csl.Address,
 ): Promise<csl.TransactionUnspentOutputs> {
@@ -631,8 +667,10 @@ export async function queryAddressUtxos(
 }
 
 /**
- * {@link submitTransaction} submits the transaction to the node via ogmios --
- * returning the transaction hash.
+ * {@link submitTransaction} submits the transaction to the Cardano node via
+ * ogmios.
+ *
+ * @returns The transaction hash of the submitted transaction
  */
 export async function submitTransaction(
   transaction: csl.Transaction,
@@ -650,7 +688,7 @@ export async function submitTransaction(
 
 /**
  * Waits for a transaction (which is assumed to already submitted) until one
- * may query it from the ledger state; or until `5 * pollDelayMs` has passed.
+ * may query it from the ledger state; or until `maxCount * pollDelayMs` has passed.
  *
  * @remarks
  * - It is possible for a transaction to have 0 transaction outputs, and hence
@@ -665,6 +703,7 @@ export async function submitTransaction(
 export async function awaitTransaction(
   transactionHash: csl.TransactionHash,
   pollDelayMs = 1000,
+  maxCount = 5,
 ): Promise<void> {
   const context = await ogmiosCreateContext();
   const client = await createLedgerStateQueryClient(context);
@@ -685,7 +724,7 @@ export async function awaitTransaction(
               transaction: { id: transactionHash.to_hex() },
             }],
           }).then((utxos) => {
-            if (utxos.length !== 0 || !(count < 5)) {
+            if (utxos.length !== 0 || !(count < maxCount)) {
               clearInterval(poll);
               resolve();
             }
@@ -700,6 +739,11 @@ export async function awaitTransaction(
   }
 }
 
+/**
+ * {@link queryCostmdls} queries cost models from ogmios
+ *
+ * @returns {@link csl.Costmdls} filled in with the information from ogmios.
+ */
 export async function queryCostmdls(): Promise<csl.Costmdls> {
   const context = await ogmiosCreateContext();
   const client = await createLedgerStateQueryClient(context);

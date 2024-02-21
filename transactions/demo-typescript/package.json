@@ -1,7 +1,7 @@
 {
   "name": "demo-typescript",
   "version": "1.0.0",
-  "description": "Sample project for LambdaBuffers",
+  "description": "Demo project for LambdaBuffers on Cardano",
   "type": "module",
   "exports": {
     "./package.json": "./package.json"
