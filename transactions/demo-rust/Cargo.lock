@@ -323,7 +323,7 @@ dependencies = [
  "lbf-demo-config-api",
  "lbf-demo-plutus-api",
  "lbf-prelude",
- "lbr-prelude 0.1.0",
+ "lbr-prelude",
  "linked-hash-map",
  "num-bigint",
  "num-integer",
@@ -821,7 +821,7 @@ name = "lbf-demo-config-api"
 version = "0.1.0"
 dependencies = [
  "lbf-prelude",
- "lbr-prelude 0.1.0",
+ "lbr-prelude",
  "serde_json",
 ]
 
@@ -831,7 +831,7 @@ version = "0.1.0"
 dependencies = [
  "lbf-plutus",
  "lbf-prelude",
- "lbr-prelude 0.1.0",
+ "lbr-prelude",
  "num-bigint",
  "plutus-ledger-api",
  "serde_json",
@@ -849,7 +849,7 @@ dependencies = [
 name = "lbf-prelude"
 version = "0.1.0"
 dependencies = [
- "lbr-prelude 0.1.0",
+ "lbr-prelude",
  "num-bigint",
 ]
 
@@ -858,21 +858,7 @@ name = "lbr-prelude"
 version = "0.1.0"
 dependencies = [
  "data-encoding",
- "lbr-prelude-derive 0.1.0",
- "num-bigint",
- "proptest",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "lbr-prelude"
-version = "0.1.0"
-source = "git+https://github.com/mlabs-haskell/lambda-buffers.git?rev=7adcef1ea98dbfe9b3c4c527db3c499e078cb4d6#7adcef1ea98dbfe9b3c4c527db3c499e078cb4d6"
-dependencies = [
- "data-encoding",
- "lbr-prelude-derive 0.1.0 (git+https://github.com/mlabs-haskell/lambda-buffers.git?rev=7adcef1ea98dbfe9b3c4c527db3c499e078cb4d6)",
+ "lbr-prelude-derive",
  "num-bigint",
  "proptest",
  "serde",
@@ -883,17 +869,6 @@ dependencies = [
 [[package]]
 name = "lbr-prelude-derive"
 version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
- "trybuild",
-]
-
-[[package]]
-name = "lbr-prelude-derive"
-version = "0.1.0"
-source = "git+https://github.com/mlabs-haskell/lambda-buffers.git?rev=7adcef1ea98dbfe9b3c4c527db3c499e078cb4d6#7adcef1ea98dbfe9b3c4c527db3c499e078cb4d6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1164,11 +1139,12 @@ checksum = "69d3587f8a9e599cc7ec2c00e331f71c4e69a5f9a4b8a6efd5b07466b9736f9a"
 [[package]]
 name = "plutus-ledger-api"
 version = "0.1.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?rev=d66d39c949f59e543c91ee36377c93422d8e9d75#d66d39c949f59e543c91ee36377c93422d8e9d75"
 dependencies = [
  "data-encoding",
- "lbr-prelude 0.1.0 (git+https://github.com/mlabs-haskell/lambda-buffers.git?rev=7adcef1ea98dbfe9b3c4c527db3c499e078cb4d6)",
+ "lbr-prelude",
+ "linked-hash-map",
  "num-bigint",
+ "num-traits",
  "proptest",
  "serde_json",
  "thiserror",
