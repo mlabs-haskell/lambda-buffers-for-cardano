@@ -5,7 +5,6 @@
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
         {
           src = ./.;
-          inherit (inputs) crane;
           crateName = "demo";
           nativeBuildInputs =
             (pkgs.lib.optionals pkgs.stdenv.isLinux [
