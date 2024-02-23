@@ -8,9 +8,9 @@ lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
 lbf-demo-config-api = { path = ".extras/lbf-demo-config-api-0.1.0" }
 lbf-demo-plutus-api = { path = ".extras/lbf-demo-plutus-api-0.1.0" }
 cardano-serialization-lib = "11.5.0"
-plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", features = [
+plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0", features = [
   "lbf",
-], rev = "d66d39c949f59e543c91ee36377c93422d8e9d75" }
+] }
 num-bigint = { version = "0.4.4", features = ["serde"] }
 num-integer = "0.1.45"
 linked-hash-map = "0.5.6"

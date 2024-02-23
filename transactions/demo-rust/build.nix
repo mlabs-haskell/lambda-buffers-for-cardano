@@ -5,7 +5,6 @@
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
         {
           src = ./.;
-          inherit (inputs) crane;
           crateName = "demo";
           nativeBuildInputs =
             (pkgs.lib.optionals pkgs.stdenv.isLinux [
@@ -29,6 +28,7 @@
 
           extraSources = [
             # LB base schema and runtime libs
+            inputs'.plutus-ledger-api-rust.packages.plutus-ledger-api-rust-src
             inputs'.lbf.packages.lbf-prelude-rust
             inputs'.lbf.packages.lbf-plutus-rust
             inputs'.lbf.packages.lbr-prelude-rust-src

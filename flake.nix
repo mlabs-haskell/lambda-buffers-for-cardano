@@ -27,9 +27,8 @@
     # Plutarch eDSL
     plutarch.follows = "lbf/plutarch";
 
-    # TODO(bladyjoker): Remove this once fixed in flake-lang.nix
-    crane.follows = "lbf/crane";
-
+    # Plutus Ledger API types and utilities for Rust
+    plutus-ledger-api-rust.follows = "lbf/plutus-ledger-api-rust";
 
     plutip.url = "github:mlabs-haskell/plutip/1bf0b547cd3689c727586abb8385c008fb2a3d1c";
     ogmios.url = "github:mlabs-haskell/ogmios-nixos/78e829e9ebd50c5891024dcd1004c2ac51facd80";
