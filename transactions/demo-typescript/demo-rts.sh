@@ -20,6 +20,7 @@
 #   (default: 69420). See [1].
 #   - `UTXOS`: the total number of UTxOs with amount `$ADA`. (default: 1). See
 #     [1]
+#   - `NUM_WALLETS`: the total number wallets (default: 1). See [1].
 #
 # REFERENCES
 # [1]: Plutip's `local-cluster` CLI reference:
@@ -27,6 +28,7 @@
 
 export ADA="${ADA:-69420}"
 export UTXOS="${UTXOS:-1}"
+export NUM_WALLETS="${NUM_WALLETS:-1}"
 
 # Ensure we kill all the background processes (plutip + ogmios) when we exit
 trap 'trap - EXIT && kill -- -$$ && exit 0' EXIT
@@ -42,14 +44,10 @@ NODE_WORKING_DIR="$(mktemp -d)"
 # The directory for plutip's local cluster information see [1]
 export LOCAL_CLUSTER_INFO_JSON="./local-cluster-info.json"
 
-# Ensure $LOCAL_CLUSTER_INFO_JSON exists because plutip doesn't like it if this
-# file doesn't already exist.
-touch "$LOCAL_CLUSTER_INFO_JSON"
-
 # Start the local cluster in the background
 1>&2 echo "demo-rts: starting plutip (local-cluster) logging to ./local-cluster.log"
 local-cluster \
-    --num-wallets 1 \
+    --num-wallets "$NUM_WALLETS" \
     --wallet-dir "$WALLET_DIR" \
     --working-dir "$NODE_WORKING_DIR" \
     --dump-info-json "$LOCAL_CLUSTER_INFO_JSON" \
@@ -71,17 +69,16 @@ do
 done
 
 # Busy loop wait until the private keys exist
-while test -z "$(find "$WALLET_DIR" -iname "*.skey")"
+while test -z "$(find "$WALLET_DIR" -iname "*.skey" | head -n 1)"
 do
     1>&2 echo "demo-rts: waiting for private keys to be ready"
     sleep 1
 done
 
-# NOTE(jaredponn): we know that there is only one file with the `.skey` suffix
-# because we initialized plutip to create only one wallet above for us.
+# NOTE(jaredponn): just pick a secret key and return that
 export SIGNING_KEY_CBOR_HEX
 SIGNING_KEY_CBOR_HEX=$(
-    SKEY_FILE="$(find "$WALLET_DIR" -iname "*.skey")"
+    SKEY_FILE="$(find "$WALLET_DIR" -iname "*.skey" | head -n 1)"
     jq -r ".cborHex" < "$SKEY_FILE"
     )
 
@@ -116,6 +113,4 @@ jq -n '{ ogmios: { host: $ogmiosHost, port: $ogmiosPort }, signingKeyCborHex: $s
 ###########################
 # Wait for plutip + ogmios to finish (they will never finish)
 ###########################
-
-# shellcheck disable=SC2046
-wait $(jobs -p)
+wait
