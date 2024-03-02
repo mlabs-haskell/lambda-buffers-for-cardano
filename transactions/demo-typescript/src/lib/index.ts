@@ -367,6 +367,8 @@ export async function inputValueTx(
         `No inline datum found for ${JSON.stringify(eqValidatorTxInJson)}`,
       );
     }
+    // NOTE(jaredponn): we don't need the datum since the UTxO has it stored
+    // inline
     const eqValidatorDatum = csl.PlutusData.from_hex(eqValidatorTxOut.datum);
     eqValidatorDatum;
     const eqValidatorRedeemerPd = plaPlutusDataToCslPlutusData(
@@ -387,9 +389,8 @@ export async function inputValueTx(
         csl.ExUnits.new(csl.BigNum.from_str("0"), csl.BigNum.from_str("0")),
         // Fill these with dummy values
       );
-      const eqValidatorWitness = csl.PlutusWitness.new(
+      const eqValidatorWitness = csl.PlutusWitness.new_without_datum(
         eqValidator,
-        eqValidatorDatum,
         eqValidatorRedeemer,
       );
 
@@ -517,19 +518,25 @@ export async function inputValueTx(
       ),
     );
 
-    const eqValidatorWitness = csl.PlutusWitness.new(
+    const eqValidatorWitness = csl.PlutusWitness.new_without_datum(
       eqValidator,
-      eqValidatorDatum,
       eqValidatorRedeemer,
     );
 
     const { transactionBuilder } = await createTxBuilder();
 
-    transactionBuilder.add_plutus_script_input(
-      eqValidatorWitness,
-      eqValidatorTxIn,
-      ogmiosValueToCslValue(eqValidatorTxOut.value),
-    );
+    /*
+     * Add tx inputs
+     */
+    {
+      const txInputsBuilder = csl.TxInputsBuilder.new();
+      txInputsBuilder.add_plutus_script_input(
+        eqValidatorWitness,
+        eqValidatorTxIn,
+        ogmiosValueToCslValue(eqValidatorTxOut.value),
+      );
+      transactionBuilder.set_inputs(txInputsBuilder);
+    }
 
     /*
      * Add collateral
@@ -564,6 +571,11 @@ export async function inputValueTx(
     );
 
     /*
+     * Calculate the script integrity hash
+     */
+    transactionBuilder.calc_script_data_hash(costModel);
+
+    /*
      * Create the change outputs
      */
     transactionBuilder.add_change_if_needed(changeAddress);
@@ -580,48 +592,6 @@ export async function inputValueTx(
     const witnesses = csl.TransactionWitnessSet.new();
     witnesses.set_redeemers(redeemers);
     witnesses.set_plutus_scripts(plutusScripts);
-
-    // Recalculate the script integrity hash since cardano-serialization-lib's
-    // default method to compute it disagrees with what it really should be.
-    {
-      const plutusWitnesses = transactionBuilder.get_plutus_input_scripts();
-
-      const languages = csl.Languages.new();
-      const actualRedeemers = csl.Redeemers.new();
-      const actualDatums = csl.PlutusList.new();
-
-      for (
-        let i = 0;
-        plutusWitnesses !== undefined && i < plutusWitnesses.len();
-        ++i
-      ) {
-        const plutusWitness = plutusWitnesses.get(i);
-        const pwRedeemer = plutusWitness.redeemer();
-        actualRedeemers.add(pwRedeemer);
-
-        const plutusWitnessScript = plutusWitness.script();
-        if (plutusWitnessScript !== undefined) {
-          languages.add(plutusWitnessScript.language_version());
-        }
-
-        // NOTE(jaredponn): we know that our unique datum is an inline datum
-        // and hence shouldn't be included in the script integrity hash.
-        // ```
-        // const plutusWitnessDatum = plutusWitness.datum();
-        // if (plutusWitnessDatum !== undefined) {
-        //   actualDatums.add(plutusWitnessDatum);
-        // }
-        // ```
-      }
-
-      transactionBuilder.set_script_data_hash(
-        csl.hash_script_data(
-          actualRedeemers,
-          costModel.retain_language_versions(languages),
-          actualDatums.len() === 0 ? undefined : actualDatums,
-        ),
-      );
-    }
 
     const transactionBody = transactionBuilder.build();
     const transactionHash = csl.hash_transaction(transactionBody);
