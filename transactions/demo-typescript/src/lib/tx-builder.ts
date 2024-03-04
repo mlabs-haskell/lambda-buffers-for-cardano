@@ -241,6 +241,9 @@ export class TxBuilder {
   }
 }
 
+/**
+ * Adds a verification key witness (signs the transaction)
+ */
 export function addVkeyWitness(
   tx: csl.Transaction,
   sk: csl.PrivateKey,
