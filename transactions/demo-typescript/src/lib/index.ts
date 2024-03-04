@@ -16,7 +16,7 @@ import { RtsConfig } from "./rtsconfig.js";
 import { plaPlutusDataToCslPlutusData } from "./utils.js";
 
 import { addVkeyWitness, TxBuilder } from "./tx-builder.js";
-import { Ogmios } from "./query.js";
+import { Ogmios, Query } from "./query.js";
 
 // Patch {@link BigInt} s.t. toJSON can print it for debugging.
 (BigInt.prototype as any).toJSON = function () {
@@ -28,7 +28,7 @@ import { Ogmios } from "./query.js";
  * to the demo protocol
  */
 export class Demo {
-  query: Ogmios;
+  query: Query;
   #signingKey: csl.PrivateKey;
   #signingKeyAddress: csl.Address;
 
@@ -36,7 +36,7 @@ export class Demo {
    * @internal
    */
   constructor(
-    query: Ogmios,
+    query: Query,
     signingKey: csl.PrivateKey,
     signingKeyAddress: csl.Address,
   ) {

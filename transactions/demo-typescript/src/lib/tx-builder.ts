@@ -42,17 +42,7 @@ export interface TxBuilderEnv {
 
 /**
  * {@link TxBuilder} is a thin wrapper around (a subset of) Cardano
- * serialization lib's transaction building functionality, but provides the
- * following additional functionality:
- *
- * - Evaluating transactions with ogmios to calculate fees for redeemers.
- *   Indeed, scripts must provide the {@link csl.ExUnits} required to submit,
- *   so in order to get this information, one needs to evaluate the script.
- *   Ogmios allows us to do this with {@link
- *   https://ogmios.dev/mini-protocols/local-tx-submission/}, where this {@link
- *   TxBuilder} will
- *
- *      - Create a "dummy" transaction
+ * serialization lib's transaction building functionality.
  */
 export class TxBuilder {
   runTxBuilderEnv: (env: TxBuilderEnv) => TxBuilderEnv;
@@ -68,13 +58,10 @@ export class TxBuilder {
   /**
    * Builds a transaction with the provided protocol parameters
    */
-  // buildPp(pp : ogmios.ProtocolParameters, exUnits? : { [key: string ]: csl.ExUnits } ) : csl.Transaction {
   build(
     txBuilderConfig: TxBuilderConfig,
     exUnits?: TxExUnits,
   ): csl.Transaction {
-    // const cslTxBuilder = ogmiosProtocolParametersToCslTransactionBuilder(pp)
-
     const cslTxBuilder = txBuilderConfigToCslTransactionBuilder(
       txBuilderConfig,
     );
@@ -125,11 +112,15 @@ export class TxBuilder {
   }
 
   /**
-   * Sets the inputs to the inputs in the transaction to the inputs currently
-   * added with functions `add*Input`.
+   * Sets the inputs in the transaction to all inputs added with functions of
+   * the form `add*Input`.
+   *
+   * Internally, we maintain a {@link csl.TxInputsBuilder} which is where all
+   * functions `add*Input` adds the inputs to, and this {@link setInputs} will
+   * set the transaction's inputs to the {@link csl.TxInputsBuilder} inputs.
    *
    * @remarks This should be called _before_ {@link addInputsFrom} as it
-   * would otherwise overwrite the  already existing inputs.
+   * would otherwise overwrite the already existing inputs used to pay fees.
    *
    * @see {@link https://github.com/Emurgo/cardano-serialization-lib/blob/11.5.0/rust/src/tx_builder.rs#L687-L689}
    */
@@ -163,13 +154,17 @@ export class TxBuilder {
   }
 
   /**
-   * Adds a Plutus Script to the inputs of the transaction where one must
-   *  - Provide the witness using the `tag`, `index`, and `exUnits` provided
-   *    by the function. This is necessary to support evaluating the
-   *    transaction figure out the ExUnits cost, then creating the
-   *    transaction with the actual ExUnits cost
-   *  - Provide the TransactionInput to spend
-   *  - Provide the value at the TransactionInput we are spending
+   * Adds a Plutus Script to the inputs of the transaction
+   * @param mkWitness - function to produce a {@link csl.PlutusWitness} from
+   * the provided `tag`, `index`, and `exUnits`.
+   * @param txInput - transaction input to spend
+   * @param value - the value of the aforementioned transaction input
+   *
+   * @remarks
+   * Because of internals of cardano-serialization-library, after one has added
+   * all inputs which were not added by {@link addInputsFrom}, one must call
+   * {@link setInputs}.
+   *
    * @see {@link https://github.com/Emurgo/cardano-serialization-lib/blob/master/rust/src/tx_builder/tx_inputs_builder.rs#L156-L168}
    */
   addPlutusScriptInput(

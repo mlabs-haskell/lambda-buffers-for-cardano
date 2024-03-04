@@ -198,7 +198,7 @@ export class Ogmios implements Query {
     try {
       const evalResults = await client.evaluateTransaction(
         transaction.to_hex(),
-        // TODO(jaredponn): we expose the API to allow users to provide
+        // TODO(jaredponn): expose the API to allow users to provide
         // extra UTxOs when evaluating the transaction
         undefined,
       );
