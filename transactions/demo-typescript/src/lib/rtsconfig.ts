@@ -1,10 +1,6 @@
 // This file includes code for creating the static set once readonly global
 // configuration of the project
 
-import {
-  createInteractionContext,
-  InteractionContext,
-} from "@cardano-ogmios/client";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import { cborHexPrivateKey } from "./utils.js";
 
@@ -39,22 +35,8 @@ export interface RtsConfig {
 }
 
 /**
- * Global configuration of the application
- *
- * See {@link initRtsConfig} for details of the schema for how this gets set
- */
-export const rtsConfig: RtsConfig = {
-  ogmios: {
-    host: undefined as unknown as string,
-    port: undefined as unknown as number,
-  },
-  signingKey: undefined as unknown as csl.PrivateKey,
-  signingKeyAddress: undefined as unknown as csl.Address,
-};
-
-/**
- * {@link initRtsConfig} reads the runtime configuration from the provided
- * file, and sets the global variable {@link rtsConfig} appropriately.
+ * {@link readRtsConfig} reads the runtime configuration from the provided
+ * file.
  *
  * Expects a JSON file of the form:
  * ```
@@ -69,7 +51,13 @@ export const rtsConfig: RtsConfig = {
  * ```
  * Note: `signingKeyAddressBech32` is optional.
  */
-export async function initRtsConfig(path: string): Promise<void> {
+export async function readRtsConfig(path: string): Promise<RtsConfig> {
+  const rtsConfig: RtsConfig = {
+    ogmios: { host: undefined, port: undefined },
+    signingKey: undefined,
+    signingKeyAddress: undefined,
+  } as unknown as RtsConfig;
+
   const contents = await fs.readFile(path, { encoding: "utf8" });
   const json = JSON.parse(contents);
 
@@ -109,22 +97,5 @@ export async function initRtsConfig(path: string): Promise<void> {
       json.signingKeyAddressBech32,
     );
   }
-}
-
-/**
- * {@link ogmiosCreateContext} is thin wrapper around the functionality to
- * create an {@link InteractionContext} from ogmios.
- */
-export async function ogmiosCreateContext(): Promise<InteractionContext> {
-  const ogmios = rtsConfig.ogmios;
-  const context = await createInteractionContext(
-    (err) => {
-      throw err;
-    },
-    () => {
-      return;
-    },
-    { connection: ogmios },
-  );
-  return context;
+  return rtsConfig;
 }

@@ -9,15 +9,8 @@ import * as PreludeJson from "prelude/Json.js";
 import { EqDatum } from "lbf-demo-plutus-api/LambdaBuffers/Demo/Plutus.mjs";
 import { ChildProcess, spawn } from "node:child_process";
 import { cslPlutusDataToPlaPlutusData } from "../lib/utils.js";
-import { initRtsConfig } from "../lib/rtsconfig.js";
-import {
-  awaitTransaction,
-  createValueTx,
-  inputIsEqualTx,
-  inputIsNotEqualTx,
-  queryAddressUtxos,
-  submitTransaction,
-} from "../lib/index.js";
+import { readRtsConfig, RtsConfig } from "../lib/rtsconfig.js";
+import { Demo } from "../lib/index.js";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import * as fs from "node:fs/promises";
 import process from "node:process";
@@ -41,6 +34,7 @@ describe(`Typescript demo tests`, async () => {
    * runtime services if `TEST_RTS_CONFIG` is set)
    */
   let demoRts: ChildProcess = undefined as unknown as ChildProcess;
+  let rtsConfig: RtsConfig = undefined as unknown as RtsConfig;
   const testRtsConfigFilePath = process.env[`TEST_RTS_CONFIG`];
 
   function killDemoRts() {
@@ -53,7 +47,7 @@ describe(`Typescript demo tests`, async () => {
   // NOTE(jaredponn): we use the same cluster for all tests
   before(async () => {
     if (testRtsConfigFilePath !== undefined) {
-      await initRtsConfig(testRtsConfigFilePath);
+      rtsConfig = await readRtsConfig(testRtsConfigFilePath);
     } else {
       demoRts = spawn("demo-rts", [], {
         stdio: ["ignore", "pipe", "ignore"],
@@ -66,7 +60,7 @@ describe(`Typescript demo tests`, async () => {
           resolve(data);
         });
       });
-      await initRtsConfig("./demo-rtsconfig.json");
+      rtsConfig = await readRtsConfig("./demo-rtsconfig.json");
     }
   });
 
@@ -102,7 +96,10 @@ describe(`Typescript demo tests`, async () => {
 
     const [exampleEqDatumA, exampleEqDatumB] = exampleData(demoPlutarchConfig);
 
+    const demo = await Demo.new(rtsConfig);
+
     await eqValidatorTest(
+      demo,
       plutarchEqValidator,
       exampleEqDatumA,
       exampleEqDatumB,
@@ -128,7 +125,9 @@ describe(`Typescript demo tests`, async () => {
       plutustxEqValidatorBytes,
     );
 
+    const demo = await Demo.new(rtsConfig);
     await eqValidatorTest(
+      demo,
       plutustxEqValidator,
       exampleEqDatumA,
       exampleEqDatumB,
@@ -229,6 +228,7 @@ export function plutusScriptToEnterpriseAddress(
 }
 
 async function eqValidatorTest(
+  demo: Demo,
   eqValidator: csl.PlutusScript,
   exampleEqDatumA: EqDatum,
   exampleEqDatumB: EqDatum,
@@ -241,7 +241,7 @@ async function eqValidatorTest(
    * same  provided `datum`.
    */
   const findTxIn = async (datum: EqDatum): Promise<csl.TransactionInput> => {
-    const utxos = await queryAddressUtxos(eqValidatorAddress);
+    const utxos = await demo.query.queryAddressUtxos(eqValidatorAddress);
 
     let datumUtxo: csl.TransactionInput | undefined = undefined;
 
@@ -280,14 +280,14 @@ async function eqValidatorTest(
   /*
    * Storing EqDatum at eqValidator
    */
-  const createEqDatumATx = await createValueTx({
+  const createEqDatumATx = await demo.createValueTx({
     eqValidatorAddress,
     eqDatum: exampleEqDatumA,
   });
 
   console.log("Storing EqDatum A @ EqV");
-  const createEqDatumATxHash = await submitTransaction(createEqDatumATx);
-  await awaitTransaction(createEqDatumATxHash);
+  const createEqDatumATxHash = await demo.query.submitTx(createEqDatumATx);
+  await demo.query.awaitTx(createEqDatumATxHash);
   console.log(
     `Successfully stored EqDatum A @ EqV with ${createEqDatumATxHash.to_hex()}`,
   );
@@ -297,7 +297,7 @@ async function eqValidatorTest(
    */
   const eqDatumATxIn = await findTxIn(exampleEqDatumA);
 
-  const eqDatumAIsEqualTx = await inputIsEqualTx(
+  const eqDatumAIsEqualTx = await demo.inputIsEqualTx(
     {
       eqValidator,
       eqValidatorTxIn: eqDatumATxIn,
@@ -308,8 +308,8 @@ async function eqValidatorTest(
   console.log(
     "Checking if EqDatum A is the same as the one previously stored (it should be)",
   );
-  const eqDatumAIsEqualTxHash = await submitTransaction(eqDatumAIsEqualTx);
-  await awaitTransaction(eqDatumAIsEqualTxHash);
+  const eqDatumAIsEqualTxHash = await demo.query.submitTx(eqDatumAIsEqualTx);
+  await demo.query.awaitTx(eqDatumAIsEqualTxHash);
   console.log(
     `Successfully checked that they are indeed the same in transaction ${eqDatumAIsEqualTxHash.to_hex()}`,
   );
@@ -317,14 +317,14 @@ async function eqValidatorTest(
   /*
    * Storing EqDatum at eqValidator
    */
-  const createEqDatumBTx = await createValueTx({
+  const createEqDatumBTx = await demo.createValueTx({
     eqValidatorAddress,
     eqDatum: exampleEqDatumB,
   });
 
   console.log(`Storing EqDatum B @ EqVal`);
-  const createEqDatumBTxHash = await submitTransaction(createEqDatumBTx);
-  await awaitTransaction(createEqDatumBTxHash);
+  const createEqDatumBTxHash = await demo.query.submitTx(createEqDatumBTx);
+  await demo.query.awaitTx(createEqDatumBTxHash);
   console.log(
     `Successfully stored EqDatum B with ${createEqDatumBTxHash.to_hex()}`,
   );
@@ -334,7 +334,7 @@ async function eqValidatorTest(
    */
   const eqDatumBTxIn = await findTxIn(exampleEqDatumB);
 
-  const eqDatumBIsEqualTx = await inputIsNotEqualTx(
+  const eqDatumBIsEqualTx = await demo.inputIsNotEqualTx(
     {
       eqValidator,
       eqValidatorTxIn: eqDatumBTxIn,
@@ -345,8 +345,8 @@ async function eqValidatorTest(
   console.log(
     `Checking if Eq Datum A is different to the one previously stored (it should be)`,
   );
-  const eqDatumBIsEqualTxHash = await submitTransaction(eqDatumBIsEqualTx);
-  await awaitTransaction(eqDatumBIsEqualTxHash);
+  const eqDatumBIsEqualTxHash = await demo.query.submitTx(eqDatumBIsEqualTx);
+  await demo.query.awaitTx(eqDatumBIsEqualTxHash);
   console.log(
     `Successfully check that they are indeed different in transaction ${eqDatumBIsEqualTxHash.to_hex()}`,
   );
