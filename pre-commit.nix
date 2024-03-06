@@ -25,6 +25,19 @@
             markdownlint.enable = true;
             dhall-format.enable = true;
             purty.enable = true;
+            denolint = {
+              enable = true;
+              # See NOTE(jaredponn) below
+              files = ''^.*\.(ts|tsx)$'';
+            };
+            denofmt = {
+              enable = true;
+              # NOTE(jaredponn): We follow the default files this formats, except
+              # we exclude markdown, js, and json because those would mess with
+              # already existing things.
+              #   [1] https://docs.deno.com/runtime/manual/tools/formatter
+              files = ''^.*\.(ts|tsx)$'';
+            };
           };
 
           settings = {

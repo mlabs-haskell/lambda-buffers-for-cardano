@@ -26,6 +26,12 @@
           files = [ "Demo/Plutus.lbf" ];
         };
 
+        lbf-demo-plutus-api-typescript = inputs.lbf.lib."${system}".lbfPlutusTypescript {
+          name = "lbf-demo-plutus-api";
+          src = ./.;
+          files = [ "Demo/Plutus.lbf" ];
+        };
+
         lbf-demo-config-api-haskell = inputs.lbf.lib."${system}".lbfPreludeHaskell {
           name = "lbf-demo-config-api";
           src = ./.;
@@ -43,7 +49,12 @@
           src = ./.;
           files = [ "Demo/Config.lbf" ];
         };
+
+        lbf-demo-config-api-typescript = inputs.lbf.lib."${system}".lbfPreludeTypescript {
+          name = "lbf-demo-config-api";
+          src = ./.;
+          files = [ "Demo/Config.lbf" ];
+        };
       };
     };
 }
-
