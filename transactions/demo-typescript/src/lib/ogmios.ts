@@ -5,9 +5,11 @@
  */
 
 import {
+  createConnectionObject,
   createInteractionContext,
   createLedgerStateQueryClient,
   createTransactionSubmissionClient,
+  getServerHealth,
   InteractionContext,
 } from "@cardano-ogmios/client";
 import * as ogmios from "@cardano-ogmios/schema";
@@ -16,6 +18,7 @@ import { TxBuilderConfig, TxExUnits } from "./tx-builder.js";
 import { ogmiosUtxoToCslUtxo } from "./utils.js";
 import { Submit } from "./submit.js";
 import { Query } from "./query.js";
+import * as timers from "node:timers/promises";
 
 /**
  * A wrapper around Ogmios.
@@ -31,6 +34,10 @@ import { Query } from "./query.js";
  * for every request. It's a lot easier to manage this if we spin up the
  * websocket ourselves :^) and make the caller manually close the socket to
  * finish things up.
+ *
+ * Moreover, it would be a good idea to acquire a ledger state for the entire
+ * ogmios session (again! it's helpful if we manage our own connection and its
+ * lifetime!) s.t. we have a consistent view of the UTxOs
  */
 export class Ogmios implements Query, Submit {
   #connection: { host: string; port: number };
@@ -63,6 +70,20 @@ export class Ogmios implements Query, Submit {
       { connection: this.#connection },
     );
     return context;
+  }
+
+  async isSynced(delay = 1000): Promise<void> {
+    const connectionObject = createConnectionObject(this.#connection);
+    let serverHealth = await getServerHealth({ connection: connectionObject });
+    let syncedAmount = serverHealth.networkSynchronization;
+
+    while (!(Math.abs(syncedAmount - 1) <= 0.01)) {
+      serverHealth = await getServerHealth({ connection: connectionObject });
+      syncedAmount = serverHealth.networkSynchronization;
+      await timers.setTimeout(delay);
+    }
+
+    return;
   }
 
   async queryAddressUtxos(

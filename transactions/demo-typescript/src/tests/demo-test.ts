@@ -233,6 +233,7 @@ async function eqValidatorTest(
   exampleEqDatumA: EqDatum,
   exampleEqDatumB: EqDatum,
 ): Promise<void> {
+  await demo.query.isSynced();
   const eqValidatorAddress = plutusScriptToEnterpriseAddress(eqValidator)
     .to_address();
 

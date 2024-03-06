@@ -13,6 +13,10 @@ export interface Query {
   queryUtxo(
     transactionInput: csl.TransactionInput,
   ): Promise<csl.TransactionUnspentOutput | undefined>;
+  /**
+   * Waits for the cardano node to be synced
+   */
+  isSynced(delay?: number): Promise<void>;
 
   queryCostmdls(): Promise<csl.Costmdls>;
   /**
