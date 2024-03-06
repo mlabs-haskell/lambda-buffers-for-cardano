@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any -- mismatches between Ogmios' types vs the actual data
+// deno-lint-ignore-file no-explicit-any
 /**
  * This file includes code for creating the transactions for this demo project
  */
@@ -20,7 +20,7 @@ import { Query } from "./query.js";
 import { Submit } from "./submit.js";
 import { Ogmios } from "./ogmios.js";
 
-// Patch {@link BigInt} s.t. toJSON can print it for debugging.
+// Patch {@link bigint} s.t. JSON.stringify can print it for debugging.
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
