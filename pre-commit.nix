@@ -10,7 +10,7 @@
       pre-commit = {
         settings = {
           excludes = [
-            "transactions/ctl-demo/spago-packages.nix"
+            "spago-packages.nix"
           ];
 
           hooks = {
@@ -21,7 +21,10 @@
             fourmolu.enable = true;
             shellcheck.enable = true;
             hlint.enable = true;
-            typos.enable = true;
+            typos = {
+              enable = true;
+              excludes = [ "fourmolu.yaml" ];
+            };
             markdownlint.enable = true;
             dhall-format.enable = true;
             purty.enable = true;
@@ -43,6 +46,7 @@
           settings = {
             ormolu.cabalDefaultExtensions = true;
             statix.ignore = [ "**spago-packages.nix" ];
+            typos.configPath = "./.typos.toml";
           };
         };
       };

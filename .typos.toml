@@ -1,7 +1,7 @@
 [default.extend-words]
 substituters = "substituters"
-hask= "hask"
-lits="lits"
+hask = "hask"
+lits = "lits"
 Nd = "Nd"
 
 [type.pdf]
@@ -10,8 +10,4 @@ check-file = false
 
 [type.png]
 extend-glob = ["*.png"]
-check-file = false
-
-[type.nix]
-extend-glob = ["spago-packages.nix"]
 check-file = false

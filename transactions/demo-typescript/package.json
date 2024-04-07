@@ -24,13 +24,13 @@
   "dependencies": {
     "@cardano-ogmios/client": "^6.0.3",
     "@emurgo/cardano-serialization-lib-nodejs": "^11.5.0",
-    "lbf-demo-config-api": "file:.extra-dependencies/lbf-demo-config-api-1.0.0.tgz",
-    "lbf-demo-plutus-api": "file:.extra-dependencies/lbf-demo-plutus-api-1.0.0.tgz",
-    "lbf-plutus": "file:.extra-dependencies/lbf-plutus-1.0.0.tgz",
-    "lbf-prelude": "file:.extra-dependencies/lbf-prelude-1.0.0.tgz",
-    "lbr-plutus": "file:.extra-dependencies/lbr-plutus-1.0.0.tgz",
-    "lbr-prelude": "file:.extra-dependencies/lbr-prelude-1.0.0.tgz",
-    "plutus-ledger-api": "file:.extra-dependencies/plutus-ledger-api-1.0.0.tgz",
-    "prelude": "file:.extra-dependencies/prelude-1.0.1.tgz"
+    "lbf-demo-config-api": "file:.extra-dependencies/lbf-demo-config-api",
+    "lbf-demo-plutus-api": "file:.extra-dependencies/lbf-demo-plutus-api",
+    "lbf-plutus": "file:.extra-dependencies/lbf-plutus",
+    "lbf-prelude": "file:.extra-dependencies/lbf-prelude",
+    "lbr-plutus": "file:.extra-dependencies/lbr-plutus",
+    "lbr-prelude": "file:.extra-dependencies/lbr-prelude",
+    "plutus-ledger-api": "file:.extra-dependencies/plutus-ledger-api",
+    "prelude": "file:.extra-dependencies/prelude"
   }
 }
