@@ -21,7 +21,10 @@
             fourmolu.enable = true;
             shellcheck.enable = true;
             hlint.enable = true;
-            typos.enable = true;
+            typos = {
+              enable = true;
+              excludes = [ "fourmolu.yaml" ];
+            };
             markdownlint.enable = true;
             dhall-format.enable = true;
             purty.enable = true;
@@ -43,24 +46,7 @@
           settings = {
             ormolu.cabalDefaultExtensions = true;
             statix.ignore = [ "**spago-packages.nix" ];
-            typos = {
-              config = ''
-                [default.extend-words]
-                substituters = "substituters"
-                hask = "hask"
-                lits = "lits"
-                Nd = "Nd"
-
-                [type.pdf]
-                extend-glob = ["*.pdf"]
-                check-file = false
-
-                [type.png]
-                extend-glob = ["*.png"]
-                check-file = false
-              '';
-              exclude = "fourmolu.yaml";
-            };
+            typos.configPath = "./.typos.toml";
           };
         };
       };
