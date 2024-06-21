@@ -8,6 +8,12 @@
           files = [ "Demo/Plutus.lbf" ];
         };
 
+        lbf-demo-plutus-api-plutustx = inputs.lbf.lib."${system}".lbfPlutusTx {
+          name = "lbf-demo-plutus-api-plutustx";
+          src = ./.;
+          files = [ "Demo/Plutus.lbf" ];
+        };
+
         lbf-demo-plutus-api-purescript = inputs.lbf.lib."${system}".lbfPlutusPurescript {
           name = "lbf-demo-plutus-api";
           src = ./.;

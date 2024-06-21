@@ -86,8 +86,8 @@ common common-language
 library
   import:          common-language
   build-depends:
-    , lbf-demo-plutus-api
-    , lbr-plutus
+    , lbf-demo-plutus-api-plutustx
+    , lbr-plutustx
     , plutus-tx
 
   hs-source-dirs:  src

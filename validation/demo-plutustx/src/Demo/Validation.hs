@@ -2,8 +2,8 @@
 
 module Demo.Validation (eqValidator) where
 
-import LambdaBuffers.Demo.Plutus (EqDatum, EqRedeemer (EqRedeemer'IsEqual, EqRedeemer'IsNotEqual))
-import LambdaBuffers.Runtime.Plutus ()
+import LambdaBuffers.Demo.Plutus.PlutusTx (EqDatum, EqRedeemer (EqRedeemer'IsEqual, EqRedeemer'IsNotEqual))
+import LambdaBuffers.Runtime.PlutusTx ()
 import PlutusTx (BuiltinData, FromData (fromBuiltinData))
 import PlutusTx.Lift ()
 import PlutusTx.Maybe (Maybe (Just, Nothing))
