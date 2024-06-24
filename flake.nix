@@ -5,7 +5,7 @@
     nixpkgs.follows = "lbf/nixpkgs";
 
     # LambdaBuffers for sharing types
-    lbf.url = "github:mlabs-haskell/lambda-buffers/bladyjoker/separate-plutustx";
+    lbf.url = "github:mlabs-haskell/lambda-buffers";
 
     # flake-lang.nix for monorepo setup
     flake-lang.follows = "lbf/flake-lang";

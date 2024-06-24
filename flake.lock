@@ -27702,16 +27702,15 @@
         "proto-nix": "proto-nix_3"
       },
       "locked": {
-        "lastModified": 1719219349,
-        "narHash": "sha256-JUiALjFPqCW/KTlScJ9sn8K9bbWyotT+y6hBl53ItRU=",
+        "lastModified": 1719244295,
+        "narHash": "sha256-SJ20NQu9aw+3qiMkhtkP463+PHtFs3VVaiaBvlX4Cuw=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "c19413f91498d7b352f3dcda1aa1c0a6d6f8dcc5",
+        "rev": "9ae3705f3f1a5c2506c7f86c8d5643c38d79e849",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "bladyjoker/separate-plutustx",
         "repo": "lambda-buffers",
         "type": "github"
       }
