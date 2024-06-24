@@ -12,15 +12,16 @@
         dependencies = [
           # LB base schema and runtimes libs
           # PlutusTx
-          "${inputs'.lbf.packages.lbf-plutus-haskell}"
-          "${inputs'.lbf.packages.lbr-plutus-haskell-src}"
+          "${inputs'.lbf.packages.lbf-plutus-plutustx}"
+          "${inputs'.lbf.packages.lbr-plutustx-src}"
           # Prelude
           "${inputs'.lbf.packages.lbf-prelude-haskell}"
+          "${inputs'.lbf.packages.lbf-prelude-plutustx}"
           "${inputs'.lbf.packages.lbr-prelude-haskell-src}"
 
           # Demo API
-          "${config.packages.lbf-demo-plutus-api-haskell}"
           "${config.packages.lbf-demo-config-api-haskell}"
+          "${config.packages.lbf-demo-plutus-api-plutustx}"
         ];
 
         devShellTools = config.settings.shell.tools;
