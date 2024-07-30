@@ -23,8 +23,15 @@ tx-bakery = { path = ".extras/tx-bakery-0.1.0" }
 reqwest = { version = "0.11.23", features = ["json"] }
 uuid = { version = "1.6.1", features = ["v4"] }
 cbor_event = "2.4.0"
-tokio = { version = "1.35.1", features = ["time", "process", "rt"] }
+tokio = { version = "1.35.1", features = [
+  "time",
+  "process",
+  "rt",
+  "rt-multi-thread",
+] }
 url = "2.5.2"
+anyhow = "1.0.86"
+clap = { version = "4.5.11", features = ["derive"] }
 
 [dev-dependencies]
 data-encoding = "2.5.0"

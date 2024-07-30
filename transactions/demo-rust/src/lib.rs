@@ -61,6 +61,8 @@ pub mod lock_eq_datum {
         eq_validator: (ValidatorHash, ScriptOrRef),
         example_eq_datum: &EqDatum,
     ) -> Result<TransactionHash> {
+        println!("Build lock transaction");
+
         // Fetching the UTxOs from the chain query client at our address
         let utxos = chain_query
             .query_utxos_by_addr(&wallet.get_change_addr())
@@ -96,6 +98,7 @@ pub mod lock_eq_datum {
             &change_strategy,
         );
 
+        println!("Bake and deliver lock transaction");
         // Bake, sign and submit the transaction
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -152,6 +155,8 @@ pub mod claim_eq_datum {
         eq_redeemer: &EqRedeemer,
         eq_datum: &EqDatum,
     ) -> Result<TransactionHash> {
+        println!("Build claim transaction");
+
         // Converting the validator hash into an address
         let eq_validator_addr = Address {
             credential: Credential::Script(eq_validator.0.clone()),
@@ -186,6 +191,7 @@ pub mod claim_eq_datum {
         // Transaction with context will attach required scripts, collateral, etc.
         let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
+        println!("Bake and deliver claim transaction");
         // Bake, sign and submit the transaction
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }

@@ -10,7 +10,7 @@ mod tests {
     use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash};
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
     use serial_test::serial;
-    use std::fs;
+    use tokio::fs;
     use tx_bakery::submitter::Submitter;
     use tx_bakery::utils::ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use tx_bakery::utils::ogmios::launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder};
@@ -21,8 +21,10 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_plutarch_is_equal() {
-        let plutarch_script = read_script("data/demo-plutarch-config.json").as_validator();
-        let (example_eq_datum_a, _) = setup_test_data();
+        let plutarch_script = read_script("data/demo-plutarch-config.json")
+            .await
+            .as_validator();
+        let (example_eq_datum_a, _) = setup_test_data(plutarch_script.0.clone());
 
         is_eq_validator_test(&plutarch_script, &example_eq_datum_a).await
     }
@@ -30,8 +32,10 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_plutarch_is_not_equal() {
-        let plutarch_script = read_script("data/demo-plutarch-config.json").as_validator();
-        let (example_eq_datum_a, example_eq_datum_b) = setup_test_data();
+        let plutarch_script = read_script("data/demo-plutarch-config.json")
+            .await
+            .as_validator();
+        let (example_eq_datum_a, example_eq_datum_b) = setup_test_data(plutarch_script.0.clone());
 
         is_not_eq_validator_test(&plutarch_script, &example_eq_datum_a, &example_eq_datum_b).await
     }
@@ -39,8 +43,10 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_plutustx_is_equal() {
-        let plutustx_script = read_script("data/demo-plutustx-config.json").as_validator();
-        let (example_eq_datum_a, _) = setup_test_data();
+        let plutustx_script = read_script("data/demo-plutustx-config.json")
+            .await
+            .as_validator();
+        let (example_eq_datum_a, _) = setup_test_data(plutustx_script.0.clone());
 
         is_eq_validator_test(&plutustx_script, &example_eq_datum_a).await
     }
@@ -48,8 +54,10 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_plutustx_is_not_equal() {
-        let plutustx_script = read_script("data/demo-plutustx-config.json").as_validator();
-        let (example_eq_datum_a, example_eq_datum_b) = setup_test_data();
+        let plutustx_script = read_script("data/demo-plutustx-config.json")
+            .await
+            .as_validator();
+        let (example_eq_datum_a, example_eq_datum_b) = setup_test_data(plutustx_script.0.clone());
 
         is_not_eq_validator_test(&plutustx_script, &example_eq_datum_a, &example_eq_datum_b).await
     }
@@ -140,9 +148,7 @@ mod tests {
         (plutip, ogmios_launcher, ogmios_client)
     }
 
-    fn setup_test_data() -> (EqDatum, EqDatum) {
-        let plutarch_script = read_script("data/demo-plutarch-config.json");
-
+    fn setup_test_data(validator_hash: ValidatorHash) -> (EqDatum, EqDatum) {
         let example_token_name = TokenName::from_string("example token name");
         let example_currency_symbol =
             CurrencySymbol::NativeToken(MintingPolicyHash(ScriptHash(LedgerBytes([0].repeat(28)))));
@@ -154,7 +160,7 @@ mod tests {
         let example_plutus_bytes = LedgerBytes(b"example bytes".to_vec());
 
         let example_address = Address {
-            credential: Credential::Script(ValidatorHash(plutarch_script.get_script_hash())),
+            credential: Credential::Script(validator_hash),
             staking_credential: None,
         };
 
@@ -184,8 +190,8 @@ mod tests {
         (example_eq_datum_a, example_eq_datum_b)
     }
 
-    fn read_script(path: &str) -> ScriptOrRef {
-        let conf_str = fs::read_to_string(path).expect(&format!(
+    async fn read_script(path: &str) -> ScriptOrRef {
+        let conf_str = fs::read_to_string(path).await.expect(&format!(
             "Couldn't read plutarch config JSON file at {}.",
             path
         ));
