@@ -27,11 +27,13 @@
     # Plutarch eDSL
     plutarch.follows = "lbf/plutarch";
 
-    # Plutus Ledger API types and utilities for Rust
-    plutus-ledger-api-rust.follows = "lbf/plutus-ledger-api-rust";
+    tx-village = {
+      url = "github:mlabs-haskell/tx-village";
+      inputs.lbf.follows = "lbf";
+    };
 
-    plutip.url = "github:mlabs-haskell/plutip/1bf0b547cd3689c727586abb8385c008fb2a3d1c";
-    ogmios.url = "github:mlabs-haskell/ogmios-nixos/78e829e9ebd50c5891024dcd1004c2ac51facd80";
+    plutip.url = "github:mlabs-haskell/plutip";
+    ogmios.url = "github:mlabs-haskell/ogmios-nixos";
   };
 
   outputs = inputs@{ flake-parts, ... }:
