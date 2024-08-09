@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::anyhow;
 use clap::Parser;
 use demo_rust::{claim_eq_datum, lock_eq_datum};
@@ -13,48 +11,9 @@ use plutus_ledger_api::v2::{
     value::{AssetClass, CurrencySymbol, TokenName},
 };
 use tokio::fs;
-use tx_bakery::{
-    chain_query::Network,
-    utils::{
-        key_wallet::KeyWallet,
-        ogmios::client::{OgmiosClient, OgmiosClientConfig, OgmiosClientConfigBuilder},
-        script::ScriptOrRef,
-    },
-};
-use url::Url;
-
-#[derive(Debug, Clone, Parser)]
-struct OgmiosOpts {
-    /// Address of the Ogmios service
-    #[arg(long, value_name = "URL", default_value = "http://127.0.0.1:1337")]
-    pub ogmios_url: Url,
-
-    /// Cardano network type (mainnet | testnet|)
-    #[arg(long, value_name = "NETWORK", default_value = "testnet")]
-    pub network: Network,
-}
-
-impl TryFrom<OgmiosOpts> for OgmiosClientConfig {
-    type Error = anyhow::Error;
-    fn try_from(opts: OgmiosOpts) -> Result<OgmiosClientConfig, anyhow::Error> {
-        OgmiosClientConfigBuilder::default()
-            .url(opts.ogmios_url)
-            .network(opts.network)
-            .build()
-            .map_err(|err| anyhow!("Couldn't build OgmiosClientConfig: {}", err))
-    }
-}
-
-#[derive(Debug, Clone, Parser)]
-struct KeyWalletOpts {
-    /// Payment signing key
-    #[arg(long, value_name = "FILE")]
-    signing_key_file: PathBuf,
-
-    /// Optional staking signing key
-    #[arg(long, value_name = "FILE")]
-    staking_signing_key_file: Option<PathBuf>,
-}
+use tx_bakery::clap::KeyWalletOpts;
+use tx_bakery::utils::{key_wallet::KeyWallet, script::ScriptOrRef};
+use tx_bakery_ogmios::{clap::OgmiosOpts, client::OgmiosClient};
 
 #[derive(Debug, Clone, Parser)]
 struct EnvOpts {

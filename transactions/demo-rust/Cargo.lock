@@ -314,9 +314,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.11"
+version = "4.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35723e6a11662c2afb578bcf0b88bf6ea8e21282a953428f240574fcc3a2b5b3"
+checksum = "c937d4061031a6d0c8da4b9a4f98a172fc2976dfb1c19213a9cf7d0d3c837e36"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -324,9 +324,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.11"
+version = "4.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49eb96cbfa7cfa35017b7cd548c75b14c3118c98b423041d70562665e07fb0fa"
+checksum = "85379ba512b21a328adf887e85f7742d12e96eb31f3ef077df4ffc26b506ffed"
 dependencies = [
  "anstream",
  "anstyle",
@@ -336,9 +336,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.11"
+version = "4.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d029b67f89d30bbb547c89fd5161293c0aec155fc691d7924b64550662db93e"
+checksum = "501d359d5f3dcaf6ecdeee48833ae73ec6e42723a1e52419c79abf9507eec0a0"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -488,6 +488,8 @@ dependencies = [
  "tokio-test",
  "tower",
  "tx-bakery",
+ "tx-bakery-ogmios",
+ "tx-bakery-plutip",
  "url",
  "uuid",
 ]
@@ -1310,11 +1312,10 @@ checksum = "0676bb32a98c1a483ce53e500a81ad9c3d5b3f7c920c28c24e9cb0980d0b5bc8"
 
 [[package]]
 name = "num-bigint"
-version = "0.4.4"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "608e7659b5c3d7cba262d894801b9ec9d00de989e8a82bd4bef91d08da45cdc0"
+checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
- "autocfg",
  "num-integer",
  "num-traits",
  "serde",
@@ -1322,11 +1323,10 @@ dependencies = [
 
 [[package]]
 name = "num-integer"
-version = "0.1.45"
+version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "225d3389fb3509a24c93f5c29eb6bde2586b98d9f016636dff58d7c6f7569cd9"
+checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
 dependencies = [
- "autocfg",
  "num-traits",
 ]
 
@@ -1960,11 +1960,12 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.111"
+version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176e46fa42316f18edd598015a5166857fc835ec732f5215eac6b7bdbf0a84f4"
+checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
 dependencies = [
  "itoa",
+ "memchr",
  "ryu",
  "serde",
 ]
@@ -2216,6 +2217,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -2411,26 +2413,62 @@ dependencies = [
  "cardano-serialization-lib",
  "cbor_event",
  "chrono",
+ "clap",
  "data-encoding",
  "derive_builder",
  "futures",
+ "jsonrpsee",
+ "num-bigint",
+ "num-traits",
+ "plutus-ledger-api",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "url",
+ "wait-timeout",
+]
+
+[[package]]
+name = "tx-bakery-ogmios"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cardano-serialization-lib",
+ "cbor_event",
+ "chrono",
+ "clap",
+ "data-encoding",
+ "derive_builder",
  "hex",
  "jsonrpsee",
- "linked-hash-map",
  "nix",
  "num-bigint",
- "num-integer",
- "num-traits",
  "plutus-ledger-api",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
- "tokio-test",
- "tower",
+ "tracing",
+ "tx-bakery",
  "url",
- "uuid",
+]
+
+[[package]]
+name = "tx-bakery-plutip"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "data-encoding",
+ "derive_builder",
+ "nix",
+ "plutus-ledger-api",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tx-bakery",
  "wait-timeout",
 ]
 

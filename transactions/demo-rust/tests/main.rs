@@ -12,10 +12,12 @@ mod tests {
     use serial_test::serial;
     use tokio::fs;
     use tx_bakery::submitter::Submitter;
-    use tx_bakery::utils::ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
-    use tx_bakery::utils::ogmios::launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder};
-    use tx_bakery::utils::plutip::{Plutip, PlutipConfigBuilder};
     use tx_bakery::utils::script::ScriptOrRef;
+    use tx_bakery_ogmios::{
+        client::{OgmiosClient, OgmiosClientConfigBuilder},
+        launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
+    };
+    use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
     use url::Url;
 
     #[tokio::test]

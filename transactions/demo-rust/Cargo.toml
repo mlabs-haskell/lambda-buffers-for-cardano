@@ -19,7 +19,11 @@ jsonrpsee-core = "0.21.0"
 jsonrpsee-http-client = "0.21.0"
 tokio-test = "0.4.3"
 tower = { version = "0.4.13", features = ["util"] }
-tx-bakery = { path = ".extras/tx-bakery-0.1.0" }
+tx-bakery = { path = ".extras/tx-bakery-0.1.0", features = ["clap"] }
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-0.1.0", features = [
+  "clap",
+] }
+tx-bakery-plutip = { path = ".extras/tx-bakery-plutip-0.1.0" }
 reqwest = { version = "0.11.23", features = ["json"] }
 uuid = { version = "1.6.1", features = ["v4"] }
 cbor_event = "2.4.0"

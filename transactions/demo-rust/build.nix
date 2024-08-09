@@ -29,6 +29,8 @@
           extraSources = [
             # LB base schema and runtime libs
             inputs'.tx-village.packages.tx-bakery-rust-src
+            inputs'.tx-village.packages.tx-bakery-ogmios-rust-src
+            inputs'.tx-village.packages.tx-bakery-plutip-rust-src
             inputs'.lbf.packages.lbf-prelude-rust
             inputs'.lbf.packages.lbf-plutus-rust
             inputs'.lbf.packages.lbr-prelude-rust-src

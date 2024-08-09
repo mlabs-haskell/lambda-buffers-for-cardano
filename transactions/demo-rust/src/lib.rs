@@ -180,7 +180,7 @@ pub mod claim_eq_datum {
         let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
         // Define the strategy to find a suitable collateral
-        let collateral = CollateralStrategy::Automatic;
+        let collateral = CollateralStrategy::Automatic { amount: 5_000_000 };
 
         // Initialise TxBakery by fetching protocol parameters from the ChainQuery
         let tx_bakery = TxBakery::init(chain_query).await?;
