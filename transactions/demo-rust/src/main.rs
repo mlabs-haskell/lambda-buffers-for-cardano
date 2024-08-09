@@ -11,8 +11,11 @@ use plutus_ledger_api::v2::{
     value::{AssetClass, CurrencySymbol, TokenName},
 };
 use tokio::fs;
-use tx_bakery::clap::KeyWalletOpts;
-use tx_bakery::utils::{key_wallet::KeyWallet, script::ScriptOrRef};
+use tx_bakery::{
+    clap::KeyWalletOpts,
+    submitter::Submitter,
+    utils::{key_wallet::KeyWallet, script::ScriptOrRef},
+};
 use tx_bakery_ogmios::{clap::OgmiosOpts, client::OgmiosClient};
 
 #[derive(Debug, Clone, Parser)]
@@ -26,7 +29,10 @@ struct EnvOpts {
 
 #[derive(Debug, Clone, Parser)]
 enum Command {
+    /// Lock a UTxO at EQ validator
     Lock(EnvOpts),
+
+    /// Claim a UTxO from EQ validator
     Claim(EnvOpts),
 }
 
@@ -42,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
     match command {
         Command::Lock(env) => {
             let runtime = Runtime::init(env).await?;
-            lock_eq_datum::build_and_submit(
+            let tx_hash = lock_eq_datum::build_and_submit(
                 &runtime.wallet,
                 &runtime.ogmios,
                 &runtime.ogmios,
@@ -51,10 +57,17 @@ async fn main() -> anyhow::Result<()> {
             )
             .await
             .map_err(|err| anyhow!(err))?;
+
+            println!("Waiting for confirmation");
+            runtime
+                .ogmios
+                .await_tx_confirm(&tx_hash)
+                .await
+                .map_err(|err| anyhow!(err))?;
         }
         Command::Claim(env) => {
             let runtime = Runtime::init(env).await?;
-            claim_eq_datum::build_and_submit(
+            let tx_hash = claim_eq_datum::build_and_submit(
                 &runtime.wallet,
                 &runtime.ogmios,
                 &runtime.ogmios,
@@ -64,6 +77,13 @@ async fn main() -> anyhow::Result<()> {
             )
             .await
             .map_err(|err| anyhow!(err))?;
+
+            println!("Waiting for confirmation");
+            runtime
+                .ogmios
+                .await_tx_confirm(&tx_hash)
+                .await
+                .map_err(|err| anyhow!(err))?;
         }
     };
 
