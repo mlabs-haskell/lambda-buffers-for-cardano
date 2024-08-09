@@ -1,208 +1,198 @@
-use crate::utils::ogmios::Ogmios;
-use crate::utils::wallet::Wallet;
-use crate::utils::{convert_plutus_data, create_tx_builder, to_redeemer};
-use cardano_serialization_lib as csl;
-use cardano_serialization_lib::address::{EnterpriseAddress, StakeCredential};
-use cardano_serialization_lib::crypto::Ed25519KeyHash;
-use cardano_serialization_lib::crypto::TransactionHash;
-use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
-use cardano_serialization_lib::plutus::PlutusScript;
-use cardano_serialization_lib::tx_builder::tx_inputs_builder::{PlutusWitness, TxInputsBuilder};
 use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer};
-use plutus_ledger_api::plutus_data::IsPlutusData;
+use num_bigint::BigInt;
+use plutus_ledger_api::{
+    plutus_data::IsPlutusData,
+    v2::{
+        address::{Address, Credential},
+        datum::{Datum, OutputDatum},
+        redeemer::Redeemer,
+        script::ValidatorHash,
+        transaction::{TransactionHash, TransactionInfo, TransactionInput, TransactionOutput},
+        value::Value,
+    },
+};
 use std::collections::BTreeMap;
-
-pub mod utils;
-
-const COINS_PER_UTXO_WORD: u64 = 34_482;
+use tx_bakery::{
+    chain_query::{ChainQuery, FullTransactionOutput},
+    error::Result,
+    submitter::Submitter,
+    tx_info_builder::TxScaffold,
+    utils::script::ScriptOrRef,
+    wallet::Wallet,
+    ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
+};
 
 /// Transaction that stores a EqDatum value at the Eq Validator.
-///
-/// This is a pure function to build a transaction scaffold.
-pub fn mk_lock_tx(
-    own_pkh: &Ed25519KeyHash,
-    validator_addr: &csl::address::Address,
-    eq_datum: &EqDatum,
-    own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
-) -> csl::tx_builder::TransactionBuilder {
-    let mut tx_builder = create_tx_builder();
-    let datum = convert_plutus_data(eq_datum.to_plutus_data());
-    let data_cost = csl::DataCost::new_coins_per_byte(&csl::utils::to_bignum(COINS_PER_UTXO_WORD));
+pub mod lock_eq_datum {
 
-    let mut available_inputs = csl::utils::TransactionUnspentOutputs::new();
-    own_utxos.iter().for_each(|(tx_in, tx_out)| {
-        let utxo = csl::utils::TransactionUnspentOutput::new(&tx_in, &tx_out);
-        available_inputs.add(&utxo);
-    });
+    use super::*;
 
-    let tx_out = TransactionOutputBuilder::new()
-        .with_address(&validator_addr)
-        .with_plutus_data(&datum)
-        .next()
-        .unwrap()
-        .with_asset_and_min_required_coin_by_utxo_cost(&csl::MultiAsset::new(), &data_cost)
-        .unwrap()
-        .build()
-        .unwrap();
+    pub fn mk_tx_info(
+        validator_addr: &Address,
+        eq_datum: &EqDatum,
+        own_utxos: &BTreeMap<TransactionInput, FullTransactionOutput>,
+    ) -> TransactionInfo {
+        // Converting datum to PlutusData
+        let datum = Datum(eq_datum.to_plutus_data());
 
-    tx_builder.add_output(&tx_out).unwrap();
-    tx_builder
-        .add_inputs_from(
-            &available_inputs,
-            csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
-        )
-        .unwrap();
-    tx_builder.add_required_signer(own_pkh);
+        // Find fee input UTxO: in this case, pick a random UTxO with more than 5 Ada
+        let fee_input = own_utxos
+            .iter()
+            .find(|(_tx_in, tx_out)| tx_out.value.get_ada_amount() >= BigInt::from(5_000_000))
+            .expect("Cannot find spendable input UTxO.");
 
-    tx_builder
+        TxScaffold::new()
+            // Adding fee input from our pub key address
+            .add_pub_key_input(fee_input.0.clone(), fee_input.1.into())
+            // Creating an output at the validator address with an inline datum
+            .add_output(TransactionOutput {
+                address: validator_addr.clone(),
+                value: Value::new(),
+                datum: OutputDatum::InlineDatum(datum),
+                reference_script: None,
+            })
+            .build()
+    }
+
+    pub async fn build_and_submit(
+        wallet: &impl Wallet,
+        chain_query: &impl ChainQuery,
+        submitter: &impl Submitter,
+        eq_validator: (ValidatorHash, ScriptOrRef),
+        example_eq_datum: &EqDatum,
+    ) -> Result<TransactionHash> {
+        println!("Build lock transaction");
+
+        // Fetching the UTxOs from the chain query client at our address
+        let utxos = chain_query
+            .query_utxos_by_addr(&wallet.get_change_addr())
+            .await?;
+
+        // Converting the validator hash into an address
+        let eq_validator_addr = Address {
+            credential: Credential::Script(eq_validator.0.clone()),
+            staking_credential: None,
+        };
+
+        // Calling our previously implemented TxInfo builder
+        // Alternatively we could call out to an external service to get the TxInfo
+        let tx_info = mk_tx_info(&eq_validator_addr, example_eq_datum, &utxos);
+
+        // Creating a map of all the scripts used in the transaction (unused scripts won't be
+        // attached)
+        let scripts = BTreeMap::new();
+
+        // Initialise TxBakery by fetching protocol parameters from the ChainQuery
+        let tx_bakery = TxBakery::init(chain_query).await?;
+
+        // Define the strategy to handle change outpu
+        let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
+
+        // Transaction with context will attach required scripts, collateral, etc.
+        let tx = TxWithCtx::new(
+            &tx_info,
+            &scripts,
+            // Define the strategy to find a suitable collateral (no script is executed, so no need
+            // to add a collateral input)
+            &CollateralStrategy::None,
+            &change_strategy,
+        );
+
+        println!("Bake and deliver lock transaction");
+        // Bake, sign and submit the transaction
+        tx_bakery.bake_and_deliver(submitter, wallet, tx).await
+    }
 }
 
 /// Make a transaction that releases UTxO stored at the `EqValidator` in one of the cases below:
 /// - redeemer is `IsEqual` and the supplied plutus data is equal to the one locked as datum
 /// - redeemer is `IsNotEqual` and the supplied plutus data is not equal to the one locked as datum
-///
-/// This is a pure function to build a transaction scaffold.
-pub fn mk_claim_tx(
-    own_pkh: &Ed25519KeyHash,
-    own_addr: &csl::address::Address,
-    own_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
-    eq_validator: &csl::plutus::PlutusScript,
-    eq_validator_utxos: &BTreeMap<csl::TransactionInput, csl::TransactionOutput>,
-    tx_input: &csl::TransactionInput,
-    collateral: &csl::TransactionInput,
-    eq_redeemer: &EqRedeemer,
-) -> csl::tx_builder::TransactionBuilder {
-    let mut tx_builder = create_tx_builder();
-    let tx_input_resolved = eq_validator_utxos.get(tx_input).unwrap();
-    let value = tx_input_resolved.amount();
-    let datum = tx_input_resolved
-        .plutus_data()
-        .expect("Expected an inline datum in transaction input.");
+pub mod claim_eq_datum {
 
-    let redeemer = to_redeemer(&convert_plutus_data(eq_redeemer.to_plutus_data()));
-    let mut tx_inputs_builder = TxInputsBuilder::new();
-    let data_cost = csl::DataCost::new_coins_per_byte(&csl::utils::to_bignum(COINS_PER_UTXO_WORD));
+    use super::*;
 
-    let tx_input_witness = PlutusWitness::new(eq_validator, &datum, &redeemer);
-    tx_inputs_builder.add_plutus_script_input(&tx_input_witness, tx_input, &value);
+    pub fn mk_tx_info(
+        own_utxos: &BTreeMap<TransactionInput, FullTransactionOutput>,
+        eq_validator_utxos: &BTreeMap<TransactionInput, FullTransactionOutput>,
+        eq_redeemer: &EqRedeemer,
+        eq_datum: &EqDatum,
+    ) -> TransactionInfo {
+        // Find fee input UTxO: in this case, pick a random UTxO with more than 5 Ada
+        let fee_input = own_utxos
+            .iter()
+            .find(|(_tx_in, tx_out)| tx_out.value.get_ada_amount() >= BigInt::from(5_000_000))
+            .expect("Cannot find spendable input UTxO.");
 
-    let mut available_inputs = csl::utils::TransactionUnspentOutputs::new();
-    own_utxos.iter().for_each(|(tx_in, tx_out)| {
-        let utxo = csl::utils::TransactionUnspentOutput::new(&tx_in, &tx_out);
-        available_inputs.add(&utxo);
-    });
+        // Finding the locked UTxO with the correct inline datum
+        let tx_input = eq_validator_utxos
+            .iter()
+            .find(|(_, tx_out)| {
+                if let OutputDatum::InlineDatum(Datum(inline_datum)) = &tx_out.datum {
+                    EqDatum::from_plutus_data(&inline_datum).unwrap() == *eq_datum
+                } else {
+                    false
+                }
+            })
+            .expect("UTxO with inline datum not found");
 
-    let mut collateral_builder = TxInputsBuilder::new();
-    let collateral_amount = own_utxos.get(&collateral).unwrap().amount();
-    collateral_builder.add_input(&own_addr, &collateral, &collateral_amount);
+        // Converting redeemer to PlutusData
+        let redeemer = Redeemer(eq_redeemer.to_plutus_data());
 
-    tx_builder
-        .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&own_addr)
-                .next()
-                .unwrap()
-                .with_asset_and_min_required_coin_by_utxo_cost(&csl::MultiAsset::new(), &data_cost)
-                .unwrap()
-                .build()
-                .unwrap(),
-        )
-        .unwrap();
+        TxScaffold::new()
+            // Adding fee input from our pub key address
+            .add_pub_key_input(fee_input.0.clone(), fee_input.1.into())
+            // Input from the validator
+            .add_script_input(tx_input.0.clone(), tx_input.1.into(), None, redeemer)
+            // Build a TransactionInfo
+            .build()
+    }
 
-    tx_builder.set_inputs(&tx_inputs_builder);
-    tx_builder.set_collateral(&collateral_builder);
-    tx_builder
-        .add_inputs_from(
-            &available_inputs,
-            csl::tx_builder::CoinSelectionStrategyCIP2::RandomImproveMultiAsset,
-        )
-        .unwrap();
-    tx_builder.add_required_signer(own_pkh);
+    pub async fn build_and_submit(
+        wallet: &impl Wallet,
+        chain_query: &impl ChainQuery,
+        submitter: &impl Submitter,
+        eq_validator: (ValidatorHash, ScriptOrRef),
+        eq_redeemer: &EqRedeemer,
+        eq_datum: &EqDatum,
+    ) -> Result<TransactionHash> {
+        println!("Build claim transaction");
 
-    tx_builder
-}
+        // Converting the validator hash into an address
+        let eq_validator_addr = Address {
+            credential: Credential::Script(eq_validator.0.clone()),
+            staking_credential: None,
+        };
 
-/// Builds and submits `mk_lock_tx`
-pub async fn lock_tx_build_and_submit(
-    wallet: &impl Wallet,
-    ogmios: &Ogmios,
-    eq_validator: &PlutusScript,
-    example_eq_datum: &EqDatum,
-) -> TransactionHash {
-    let utxos = ogmios.query_utxos(&wallet.get_own_addr()).await;
+        // Fetching the UTxOs from the chain query client at our address
+        let own_utxos = chain_query
+            .query_utxos_by_addr(&wallet.get_change_addr())
+            .await?;
 
-    let eq_validator_addr = EnterpriseAddress::new(
-        wallet.get_network_id(),
-        &StakeCredential::from_scripthash(&eq_validator.hash()),
-    )
-    .to_address();
+        // Fetching the UTxOs from the chain query client at the validator address
+        let eq_validator_utxos = chain_query.query_utxos_by_addr(&eq_validator_addr).await?;
 
-    let create_eq_datum_a_tx_builder = mk_lock_tx(
-        &wallet.get_own_pkh(),
-        &eq_validator_addr,
-        example_eq_datum,
-        &utxos,
-    );
+        // Calling our previously implemented TxInfo builder
+        // Alternatively we could call out to an external service to get the TxInfo
+        let tx_info = mk_tx_info(&own_utxos, &eq_validator_utxos, eq_redeemer, eq_datum);
 
-    ogmios
-        .balance_sign_and_submit_transacton(
-            create_eq_datum_a_tx_builder,
-            wallet,
-            &wallet.get_own_addr(),
-            &Vec::new(),
-            &Vec::new(),
-            &Vec::new(),
-        )
-        .await
-}
+        // Creating a map of all the scripts used in the transaction (unused scripts won't be
+        // attached)
+        let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
-/// Builds and submits `mk_claim_tx`
-pub async fn claim_tx_build_and_submit(
-    wallet: &impl Wallet,
-    ogmios: &Ogmios,
-    eq_validator: &PlutusScript,
-    eq_redeemer: &EqRedeemer,
-    datum: &EqDatum,
-) -> TransactionHash {
-    let validator_addr = EnterpriseAddress::new(
-        wallet.get_network_id(),
-        &StakeCredential::from_scripthash(&eq_validator.hash()),
-    )
-    .to_address();
+        // Define the strategy to find a suitable collateral
+        let collateral = CollateralStrategy::Automatic { amount: 5_000_000 };
 
-    let eq_validator_utxos = ogmios.query_utxos(&validator_addr).await;
-    let utxos = ogmios.query_utxos(&wallet.get_own_addr()).await;
+        // Initialise TxBakery by fetching protocol parameters from the ChainQuery
+        let tx_bakery = TxBakery::init(chain_query).await?;
 
-    let (tx_in, _) = eq_validator_utxos
-        .iter()
-        .find(|(_, tx_out)| {
-            tx_out.plutus_data() == Some(convert_plutus_data(datum.to_plutus_data()))
-        })
-        .expect("Utxo with inline datum not found");
+        // Define the strategy to handle change outpu
+        let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
 
-    let collateral = utxos.keys().next().unwrap();
+        // Transaction with context will attach required scripts, collateral, etc.
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
-    let eq_datum_a_is_equal_tx = mk_claim_tx(
-        &wallet.get_own_pkh(),
-        &wallet.get_own_addr(),
-        &utxos,
-        eq_validator,
-        &eq_validator_utxos,
-        &tx_in,
-        &collateral,
-        &eq_redeemer,
-    );
-
-    let redeemer_data = convert_plutus_data(eq_redeemer.to_plutus_data());
-
-    ogmios
-        .balance_sign_and_submit_transacton(
-            eq_datum_a_is_equal_tx,
-            wallet,
-            &wallet.get_own_addr(),
-            &vec![eq_validator.clone()],
-            &vec![redeemer_data],
-            &Vec::new(),
-        )
-        .await
+        println!("Bake and deliver claim transaction");
+        // Bake, sign and submit the transaction
+        tx_bakery.bake_and_deliver(submitter, wallet, tx).await
+    }
 }
