@@ -21648,11 +21648,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1722336599,
-        "narHash": "sha256-cQ4VlBYC/fQWeg6tlR+vtvFpKxzM6+Rrik3EE0FyBy0=",
+        "lastModified": 1723207459,
+        "narHash": "sha256-q1tPrU3SgP5X0ufRjqkDQt04JGG4yn+1ZV9ErINYYBU=",
         "owner": "mlabs-haskell",
         "repo": "tx-village",
-        "rev": "4d6ccb05a03f77d29ee656ff3bc1173c50ab5cfe",
+        "rev": "a6b72911cf4b08df0b1f36dc94240559786b6f37",
         "type": "github"
       },
       "original": {
