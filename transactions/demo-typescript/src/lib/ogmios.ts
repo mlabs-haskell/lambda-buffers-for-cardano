@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any -- mismatches between Ogmios' types vs the actual data
 /**
  * Implementation for ogmios to satisfy the {@link Submit} and {@link Query}
  * interface
@@ -275,33 +274,18 @@ function ogmiosEvaluateTransactionToCslExUnits(
 
   const result: TxExUnits = {};
 
-  const spendRe = /^spend:([0-9]+)$/;
-
   for (const i of resp) {
-    // TODO(jaredponn): surely this is yet another bug -- the type
-    // disagrees with what ogmios actual responds with.
-    // E.g. Actual Ogmios response: `spend:0`
-    //      vs
-    //      The type:  {purpose : "spend", index: 0}
-    const validatorPurpose: string = i.validator as unknown as string;
+    const validatorPurpose = i.validator;
 
-    const spendReMatches = validatorPurpose.match(spendRe);
-    if (spendReMatches !== null && spendReMatches.length == 2) {
-      const spendingInput = inputs.get(parseInt(spendReMatches[1]!));
-      result[spendingInput.to_hex()] = csl.ExUnits.new(
-        csl.BigNum.from_str(
-          Math.ceil(i.budget.memory * excessBudgetFactor).toString(),
-        ),
-        csl.BigNum.from_str(
-          Math.ceil(i.budget.cpu * excessBudgetFactor).toString(),
-        ),
-      );
-    } else {
-      // TODO(jaredponn): add the rest of the types e.g. mint, withdraw, etc.
-      throw new Error(
-        `Unsupported evaluation response with purpose: ${validatorPurpose}`,
-      );
-    }
+    const spendingInput = inputs.get(validatorPurpose.index);
+    result[spendingInput.to_hex()] = csl.ExUnits.new(
+      csl.BigNum.from_str(
+        Math.ceil(i.budget.memory * excessBudgetFactor).toString(),
+      ),
+      csl.BigNum.from_str(
+        Math.ceil(i.budget.cpu * excessBudgetFactor).toString(),
+      ),
+    );
   }
 
   return result;
@@ -322,18 +306,8 @@ function ogmiosProtocolParametersToTxBuilderConfig(
     throw new Error(`Ogmios protocol parameters is missing minFeeConstant`);
   }
 
-  if ((params.minFeeConstant as any).lovelace === undefined) {
-    throw new Error(
-      `Internal error hacking around ogmios is no longer valid. See nearby TODO(jaredponn) in the source.`,
-    );
-  }
-
   const minFeeConstant = csl.BigNum.from_str(
-    // TODO(jaredponn): surely this is a bug (or mismatching ogmios versions)
-    // -- the types want this to be at `.ada.lovelace`, but the JSON object
-    // returned from ogmios only has `.lovelace`.
-    // Hence, why we cast everything to `any`.
-    (params.minFeeConstant as any).lovelace.toString(),
+    params.minFeeConstant.ada.lovelace.toString(),
   );
 
   const linearFee = csl.LinearFee.new(minFeeCoefficient, minFeeConstant);
@@ -342,14 +316,8 @@ function ogmiosProtocolParametersToTxBuilderConfig(
     throw new Error(`Ogmios protocol parameters is missing stakePoolDeposit`);
   }
 
-  if ((params.stakePoolDeposit as any).lovelace === undefined) {
-    throw new Error(
-      `Internal error hacking around ogmios is no longer valid. See nearby TODO(jaredponn) in the source.`,
-    );
-  }
-
   const stakePoolDeposit = csl.BigNum.from_str(
-    (params.stakePoolDeposit as any).lovelace.toString(),
+    params.stakePoolDeposit.ada.lovelace.toString(),
   );
 
   if (params.stakeCredentialDeposit === undefined) {
@@ -358,14 +326,8 @@ function ogmiosProtocolParametersToTxBuilderConfig(
     );
   }
 
-  if ((params.stakeCredentialDeposit as any).lovelace === undefined) {
-    throw new Error(
-      `Internal error hacking around ogmios is no longer valid. See nearby TODO(jaredponn) in the source.`,
-    );
-  }
-
   const stakeCredentialDeposit = csl.BigNum.from_str(
-    (params.stakeCredentialDeposit as any).lovelace.toString(),
+    params.stakeCredentialDeposit.ada.lovelace.toString(),
   );
 
   if (params.maxValueSize === undefined) {
