@@ -74,15 +74,15 @@ enum Command {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let command = Command::parse();
+    let eq_validator = read_script("data/demo-plutarch-config.json")
+        .await
+        .as_validator();
+
+    let eq_datum = setup_test_data(eq_validator.0.clone());
+
     match command {
         Command::Lock(env) => {
             let runtime = Runtime::init(env).await?;
-            let eq_validator = read_script("data/demo-plutarch-config.json")
-                .await
-                .as_validator();
-
-            let eq_datum = setup_test_data(eq_validator.0.clone());
-
             lock_eq_datum::build_and_submit(
                 &runtime.wallet,
                 &runtime.ogmios,
@@ -95,12 +95,6 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::Claim(env) => {
             let runtime = Runtime::init(env).await?;
-            let eq_validator = read_script("data/demo-plutarch-config.json")
-                .await
-                .as_validator();
-
-            let eq_datum = setup_test_data(eq_validator.0.clone());
-
             claim_eq_datum::build_and_submit(
                 &runtime.wallet,
                 &runtime.ogmios,
