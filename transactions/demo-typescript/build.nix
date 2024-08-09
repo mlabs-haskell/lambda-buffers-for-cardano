@@ -28,7 +28,7 @@
       demoRts = pkgs.writeShellApplication {
         name = "demo-rts";
         runtimeInputs =
-          [ pkgs.jq inputs'.plutip.packages."plutip-core:exe:local-cluster" inputs'.ogmios.packages."ogmios:exe:ogmios" ];
+          [ pkgs.jq inputs'.plutip.packages."plutip-core:exe:local-cluster" inputs'.ogmios.packages."ogmios:exe:ogmios" pkgs.lsof ];
         text = builtins.readFile ./demo-rts.sh;
       };
 

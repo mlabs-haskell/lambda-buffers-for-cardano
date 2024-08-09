@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # DESCRIPTION
 #
 # This shell script does the following.
@@ -97,6 +99,11 @@ ogmios \
     --node-config "$(echo "$NODE_SOCKET" | sed -e 's/\.socket$/\.config/')" \
     2>&1 | tee ogmios.log 1>&2 \
     &
+
+until 1>&2 lsof -i tcp@"$OGMIOS_HOST":"$OGMIOS_PORT" -s TCP:LISTEN; do
+    1>&2 echo "demo-rts: waiting for \`ogmios\` to be ready"
+    sleep 1
+done
 
 ###########################
 # Creating a runtime configuration file for the TS application
