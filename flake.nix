@@ -48,6 +48,7 @@
         ./validation/demo-plutustx/build.nix
         ./transactions/demo-ctl/build.nix
         ./transactions/demo-rust/build.nix
+        ./transactions/demo-haskell/build.nix
         ./transactions/demo-typescript/build.nix
       ];
       debug = true;
