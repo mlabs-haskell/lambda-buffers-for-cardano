@@ -60,7 +60,11 @@ library
   import:           warnings
 
   -- Modules exported by the library.
-  exposed-modules:  MyLib
+  exposed-modules:
+    Demo
+    Demo.Cli
+    Demo.Config
+    Demo.Process
 
   -- Modules included in this library but not exported.
   -- other-modules:
@@ -70,9 +74,19 @@ library
 
   -- Other library packages from which modules are imported.
   build-depends:
+    , aeson
     , base
+    , bytestring
+    , cardano-api
+    , lbf-demo-config-api
     , lbf-demo-plutus-api
+    , lbr-plutus
+    , lbr-prelude
+    , mtl
+    , optparse-applicative
+    , plutus-ledger-api
 
+  -- , lbf-demo-request-api
   -- Directories containing source files.
   hs-source-dirs:   src
 

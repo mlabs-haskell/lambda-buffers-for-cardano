@@ -1,0 +1,36 @@
+-- "Demo.Request" contains information to make a Request to the protocol for a
+-- 'Demo.Response.Response'
+module Demo.Request
+
+import Prelude (Set, Json, Eq)
+import Plutus.V1 (TxOutRef, Address, POSIXTime)
+
+import Demo.Plutus (EqDatum, EqRedeemer)
+
+record Request req =
+    { feeInputs : Set TxOutRef
+    , changeAddress : Address
+    , currentTime : POSIXTime
+    , request : req
+    }
+
+derive Eq (Request a)
+derive Json (Request a)
+
+record LockRequest = { eqDatum : EqDatum }
+
+derive Eq LockRequest
+derive Json LockRequest
+
+record ClaimRequest = { eqDatum : EqDatum, eqRedeemer : EqRedeemer }
+
+derive Eq ClaimRequest
+derive Json ClaimRequest
+
+-- Sum type of all the possible requests for the Demo protocol
+sum DemoRequest
+    = Lock (Request LockRequest)
+    | Claim (Request ClaimRequest)
+
+derive Eq DemoRequest
+derive Json DemoRequest

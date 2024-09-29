@@ -5,8 +5,16 @@
         lbf-demo-plutus-api-haskell = inputs.lbf.lib."${system}".lbfPlutusHaskell {
           name = "lbf-demo-plutus-api";
           src = ./.;
-          files = [ "Demo/Plutus.lbf" ];
+          files = [ "Demo/Plutus.lbf" "Demo/Request.lbf" "Demo/Response.lbf" ];
         };
+
+        # lbf-demo-request-api-haskell = inputs.lbf.lib."${system}".lbfPlutusHaskell {
+        #   name = "lbf-demo-request-api";
+        #   src = ./.;
+        #   dependencies = [ "lbf-demo-plutus-api" ];
+        #   imports = [ ./. ];
+        #   files = [ "Demo/Request.lbf" "Demo/Response.lbf" ];
+        # };
 
         lbf-demo-plutus-api-plutustx = inputs.lbf.lib."${system}".lbfPlutusTx {
           name = "lbf-demo-plutus-api-plutustx";
