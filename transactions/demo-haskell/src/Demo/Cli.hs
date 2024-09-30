@@ -4,16 +4,16 @@ Provides a CLI interface for interacting with the demo protocol
 -}
 module Demo.Cli (parser) where
 
-import qualified Control.Monad as Monad
-import qualified Control.Monad.Except as Except
-import qualified Data.Bifunctor as Bifunctor
-import qualified Data.ByteString as ByteString
+import Control.Monad qualified as Monad
+import Control.Monad.Except qualified as Except
+import Data.Bifunctor qualified as Bifunctor
+import Data.ByteString qualified as ByteString
 import LambdaBuffers.Demo.Request (ClaimRequest, DemoRequest (..), LockRequest, Request (..))
 import LambdaBuffers.Runtime.Prelude (Json)
-import qualified LambdaBuffers.Runtime.Prelude
+import LambdaBuffers.Runtime.Prelude qualified
 import Options.Applicative (Parser, ParserInfo)
-import qualified Options.Applicative
-import qualified System.IO.Error as IO.Error
+import Options.Applicative qualified
+import System.IO.Error qualified as IO.Error
 
 -- | The CLI parser
 parser :: ParserInfo (IO DemoRequest)
@@ -34,7 +34,7 @@ buildTxInfoRequest =
             <> Options.Applicative.command "claim" (fmap DemoRequest'Claim <$> claimRequest)
         )
     )
-    (Options.Applicative.progDesc "Creates a TxInfo suitable for tx-village's bakery to build / submit a transaction")
+    (Options.Applicative.progDesc "Outputs a LB JSON encoded TxInfo on stdout suitable for tx-village's bakery to build / submit a transaction")
 
 claimRequest :: ParserInfo (IO (Request ClaimRequest))
 claimRequest =

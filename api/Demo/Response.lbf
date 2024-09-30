@@ -3,7 +3,8 @@
 module Demo.Response
 
 import Prelude (Text, Eq, Json)
-import Plutus.V1 (TxInfo, PlutusData)
+import Plutus.V1 (PlutusData)
+import Plutus.V2 (TxInfo)
 
 sum Response res 
     = Result (Result res)
