@@ -20,7 +20,6 @@
           # Demo API
           "${config.packages.lbf-demo-plutus-api-haskell}"
           "${config.packages.lbf-demo-config-api-haskell}"
-          # "${config.packages.lbf-demo-request-api-haskell}"
         ];
 
         devShellTools = config.settings.shell.tools;

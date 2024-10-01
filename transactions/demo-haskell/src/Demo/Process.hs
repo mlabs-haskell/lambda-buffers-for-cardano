@@ -17,6 +17,7 @@ import PlutusLedgerApi.V2 (Address (..), Credential (..), Datum (..), Extended (
 import PlutusTx.AssocMap qualified as AssocMap
 import PlutusTx.IsData.Class qualified as IsData.Class
 
+-- | Given a 'Config' and 'DemoRequest', outputs a 'Response'
 process :: Config -> DemoRequest -> Response ()
 process config demoRequest =
   case Cardano.Api.deserialiseFromRawBytes (Cardano.Api.proxyToAsType Proxy) $ Coerce.coerce $ config'eqValidator config of

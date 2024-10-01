@@ -23,6 +23,7 @@ parser =
         ( Options.Applicative.command "build-tx-info" buildTxInfoRequest
         -- <> Options.Applicative.command "scripts" lockCommand
         )
+        Options.Applicative.<**> Options.Applicative.helper
     )
     (Options.Applicative.progDesc "CLI interface for interacting with the demo protocol")
 
@@ -33,13 +34,14 @@ buildTxInfoRequest =
         ( Options.Applicative.command "lock" (fmap DemoRequest'Lock <$> lockRequest)
             <> Options.Applicative.command "claim" (fmap DemoRequest'Claim <$> claimRequest)
         )
+        Options.Applicative.<**> Options.Applicative.helper
     )
     (Options.Applicative.progDesc "Outputs a LB JSON encoded TxInfo on stdout suitable for tx-village's bakery to build / submit a transaction")
 
 claimRequest :: ParserInfo (IO (Request ClaimRequest))
 claimRequest =
   Options.Applicative.info
-    claimRequestFilePathParser
+    (claimRequestFilePathParser Options.Applicative.<**> Options.Applicative.helper)
     (Options.Applicative.progDesc "Creates a TxInfo suitable for tx-village's bakery for creating a Lock transaction")
 
 claimRequestFilePathParser :: Parser (IO (Request ClaimRequest))
@@ -54,7 +56,7 @@ claimRequestFilePathParser =
 lockRequest :: ParserInfo (IO (Request LockRequest))
 lockRequest =
   Options.Applicative.info
-    lockRequestFilePathParser
+    (lockRequestFilePathParser Options.Applicative.<**> Options.Applicative.helper)
     (Options.Applicative.progDesc "Creates a TxInfo suitable for tx-village's bakery for creating a Lock transaction")
 
 lockRequestFilePathParser :: Parser (IO (Request LockRequest))
