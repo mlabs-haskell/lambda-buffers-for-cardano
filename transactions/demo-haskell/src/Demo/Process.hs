@@ -80,41 +80,44 @@ process config demoRequest =
             DemoRequest'Claim req ->
               let changeTxOut = mkChangeTxOut req
                   lockedUtxo = claimRequest'lockedUtxo (request'request req)
-               in Response'Result $
-                    Result
-                      { result'txInfo =
-                          TxInfo
-                            { txInfoInputs =
-                                lockedUtxo : request'feeInputs req
-                            , txInfoOutputs =
-                                [changeTxOut]
-                            , txInfoFee = mempty
-                            , txInfoMint = mempty
-                            , txInfoDCert = []
-                            , txInfoWdrl = AssocMap.empty
-                            , txInfoValidRange =
-                                Interval
-                                  (LowerBound NegInf False)
-                                  (UpperBound PosInf False)
-                            , txInfoSignatories = mempty
-                            , txInfoData = AssocMap.empty
-                            , txInfoId = TxId mempty
-                            , txInfoReferenceInputs = mempty
-                            , txInfoRedeemers =
-                                AssocMap.fromListSafe
-                                  [
-                                    ( Spending $ txInInfoOutRef lockedUtxo
-                                    , Redeemer
-                                        { getRedeemer =
-                                            IsData.Class.toBuiltinData $
-                                              claimRequest'eqRedeemer $
-                                                request'request req
-                                        }
-                                    )
-                                  ]
-                            }
-                      , result'response = ()
-                      }
+               in if txOutAddress (txInInfoResolved lockedUtxo) == eqValidatorAddress
+                    then
+                      Response'Result $
+                        Result
+                          { result'txInfo =
+                              TxInfo
+                                { txInfoInputs =
+                                    lockedUtxo : request'feeInputs req
+                                , txInfoOutputs =
+                                    [changeTxOut]
+                                , txInfoFee = mempty
+                                , txInfoMint = mempty
+                                , txInfoDCert = []
+                                , txInfoWdrl = AssocMap.empty
+                                , txInfoValidRange =
+                                    Interval
+                                      (LowerBound NegInf False)
+                                      (UpperBound PosInf False)
+                                , txInfoSignatories = mempty
+                                , txInfoData = AssocMap.empty
+                                , txInfoId = TxId mempty
+                                , txInfoReferenceInputs = mempty
+                                , txInfoRedeemers =
+                                    AssocMap.fromListSafe
+                                      [
+                                        ( Spending $ txInInfoOutRef lockedUtxo
+                                        , Redeemer
+                                            { getRedeemer =
+                                                IsData.Class.toBuiltinData $
+                                                  claimRequest'eqRedeemer $
+                                                    request'request req
+                                            }
+                                        )
+                                      ]
+                                }
+                          , result'response = ()
+                          }
+                    else Response'Error $ Error'Build "Invalid lockedUtxo. The locked UTxO must be at the eqValidator address"
 
 {- | Creates the change 'TxOut' from a 'Request' which should be the last
 element in the list of 'txInfoOutputs' of a 'TxInInfo'
