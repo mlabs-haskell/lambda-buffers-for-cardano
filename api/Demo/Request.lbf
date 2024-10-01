@@ -2,13 +2,14 @@
 -- 'Demo.Response.Response'
 module Demo.Request
 
-import Prelude (Set, Json, Eq)
-import Plutus.V1 (TxOutRef, Address, POSIXTime)
+import Prelude (Set, Json, Eq, List)
+import Plutus.V1 (Address, POSIXTime)
+import Plutus.V2 (TxInInfo)
 
 import Demo.Plutus (EqDatum, EqRedeemer)
 
 record Request req =
-    { feeInputs : Set TxOutRef
+    { feeInputs : List TxInInfo
     , changeAddress : Address
     , currentTime : POSIXTime
     , request : req
@@ -22,7 +23,7 @@ record LockRequest = { eqDatum : EqDatum }
 derive Eq LockRequest
 derive Json LockRequest
 
-record ClaimRequest = { eqDatum : EqDatum, eqRedeemer : EqRedeemer }
+record ClaimRequest = { lockedUtxo : TxInInfo, eqRedeemer : EqRedeemer }
 
 derive Eq ClaimRequest
 derive Json ClaimRequest

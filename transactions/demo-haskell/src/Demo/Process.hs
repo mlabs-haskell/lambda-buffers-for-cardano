@@ -10,10 +10,10 @@ import Data.Coerce qualified as Coerce
 import Data.Proxy (Proxy (..))
 import Data.Text qualified as Text
 import LambdaBuffers.Demo.Config (Config (..), Script (..))
-import LambdaBuffers.Demo.Request (ClaimRequest, DemoRequest (..), LockRequest (..), Request (..))
+import LambdaBuffers.Demo.Request (ClaimRequest (..), DemoRequest (..), LockRequest (..), Request (..))
 import LambdaBuffers.Demo.Response (Error (..), Response (..), Result (..))
 import PlutusLedgerApi.V1.Bytes qualified as V1.Bytes
-import PlutusLedgerApi.V2 (Address (..), Credential (..), Datum (..), Extended (..), Interval (..), LowerBound (..), OutputDatum (..), ScriptHash (..), TxId (..), TxInfo (..), TxOut (..), UpperBound (..))
+import PlutusLedgerApi.V2 (Address (..), Credential (..), Datum (..), Extended (..), Interval (..), LowerBound (..), OutputDatum (..), Redeemer (..), ScriptHash (..), ScriptPurpose (..), TxId (..), TxInInfo (..), TxInfo (..), TxOut (..), UpperBound (..))
 import PlutusTx.AssocMap qualified as AssocMap
 import PlutusTx.IsData.Class qualified as IsData.Class
 
@@ -53,28 +53,78 @@ process config demoRequest =
                                   request'request
                                     req
                       }
+                  changeTxOut = mkChangeTxOut req
                in Response'Result $
                     Result
                       { result'txInfo =
                           TxInfo
-                            { txInfoInputs = [] -- :: [TxInInfo]
+                            { txInfoInputs = request'feeInputs req
                             , txInfoOutputs =
-                                [eqValidatorTxOut]
-                            , -- :: [TxOut]
-                              txInfoFee = mempty -- :: Value
-                            , txInfoMint = mempty -- :: Value,
-                            , txInfoDCert = [] -- :: [DCert],
-                            , txInfoWdrl = AssocMap.empty -- :: [(StakingCredential, Integer)],
+                                [eqValidatorTxOut, changeTxOut]
+                            , txInfoFee = mempty
+                            , txInfoMint = mempty
+                            , txInfoDCert = []
+                            , txInfoWdrl = AssocMap.empty
                             , txInfoValidRange =
                                 Interval
                                   (LowerBound NegInf False)
-                                  (UpperBound PosInf False) -- :: POSIXTimeRange,
-                            , txInfoSignatories = mempty -- :: [PubKeyHash],
-                            , txInfoData = AssocMap.empty -- :: [(DatumHash, Datum)],
-                            , txInfoId = TxId mempty -- :: TxId
+                                  (UpperBound PosInf False)
+                            , txInfoSignatories = mempty
+                            , txInfoData = AssocMap.empty
+                            , txInfoId = TxId mempty
                             , txInfoReferenceInputs = mempty
                             , txInfoRedeemers = AssocMap.empty
                             }
                       , result'response = ()
                       }
-            DemoRequest'Claim req -> undefined
+            DemoRequest'Claim req ->
+              let changeTxOut = mkChangeTxOut req
+                  lockedUtxo = claimRequest'lockedUtxo (request'request req)
+               in Response'Result $
+                    Result
+                      { result'txInfo =
+                          TxInfo
+                            { txInfoInputs =
+                                lockedUtxo : request'feeInputs req
+                            , txInfoOutputs =
+                                [changeTxOut]
+                            , txInfoFee = mempty
+                            , txInfoMint = mempty
+                            , txInfoDCert = []
+                            , txInfoWdrl = AssocMap.empty
+                            , txInfoValidRange =
+                                Interval
+                                  (LowerBound NegInf False)
+                                  (UpperBound PosInf False)
+                            , txInfoSignatories = mempty
+                            , txInfoData = AssocMap.empty
+                            , txInfoId = TxId mempty
+                            , txInfoReferenceInputs = mempty
+                            , txInfoRedeemers =
+                                AssocMap.fromListSafe
+                                  [
+                                    ( Spending $ txInInfoOutRef lockedUtxo
+                                    , Redeemer
+                                        { getRedeemer =
+                                            IsData.Class.toBuiltinData $
+                                              claimRequest'eqRedeemer $
+                                                request'request req
+                                        }
+                                    )
+                                  ]
+                            }
+                      , result'response = ()
+                      }
+
+{- | Creates the change 'TxOut' from a 'Request' which should be the last
+element in the list of 'txInfoOutputs' of a 'TxInInfo'
+-}
+mkChangeTxOut :: Request a -> TxOut
+mkChangeTxOut req =
+  TxOut
+    { txOutAddress = request'changeAddress req
+    , txOutValue =
+        foldMap (txOutValue . txInInfoResolved) $ request'feeInputs req
+    , txOutReferenceScript = Nothing
+    , txOutDatum = NoOutputDatum
+    }
