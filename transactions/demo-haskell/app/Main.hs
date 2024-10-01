@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Demo
+import Demo qualified
 
 main :: IO ()
 main = Demo.main
