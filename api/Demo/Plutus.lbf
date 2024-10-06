@@ -10,15 +10,21 @@ record Record a = {
   bar : Address,
   baz : a
  }
+
 derive Eq (Record a)
+derive Json (Record a)
 derive PlutusData (Record a)
 
 prod Product b = AssetClass Address b
+
 derive Eq (Product a)
+derive Json (Product a)
 derive PlutusData (Product a)
 
 sum Sum a = Foo AssetClass | Bar Address | Baz a
+
 derive Eq (Sum a)
+derive Json (Sum a)
 derive PlutusData (Sum a)
 
 -- EqDatum is stored at EqValidator UTxOs
@@ -27,10 +33,14 @@ record EqDatum = {
   prod : Product Plutus.Bytes,
   sum : Sum Plutus.Bytes
   }
+
 derive Eq EqDatum
+derive Json EqDatum
 derive PlutusData EqDatum
 
 -- EqRedeemer denotes the type of validation performed by the EqValidator
 sum EqRedeemer = IsEqual EqDatum | IsNotEqual EqDatum
+
 derive Eq EqRedeemer
+derive Json EqRedeemer
 derive PlutusData EqRedeemer
