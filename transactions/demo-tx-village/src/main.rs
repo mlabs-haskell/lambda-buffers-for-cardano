@@ -1,5 +1,6 @@
 mod cli;
 mod query_utxos;
+mod scripts;
 
 use clap::{ArgMatches};
 use query_utxos::{query_utxos};
@@ -13,13 +14,14 @@ async fn main() {
 
     match matches.subcommand() {
         Some(("query-utxos", sub_matches)) =>{
-            if let (Some(network), Some(ogmios_url), Some(addr)) = 
+            if let (Some(network), Some(ogmios_url), Some(addr), option_datum) = 
                         ( sub_matches.get_one::<Network>("network")
                         , sub_matches.get_one::<Url>("ogmios_url")
                         , sub_matches.get_one::<plutus_ledger_api::v1::address::Address>("bech32-address")
+                        , sub_matches.get_one::<plutus_ledger_api::plutus_data::PlutusData>("datum")
                         )
             {
-                query_utxos(network.clone(), ogmios_url.clone(), addr.clone()).await;
+                query_utxos(network.clone(), ogmios_url.clone(), addr.clone(), option_datum.clone().cloned()).await;
             }
         }
         Some(("scripts", sub_matches)) => {
