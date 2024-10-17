@@ -48,6 +48,9 @@ build-type:      Simple
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
 extra-doc-files: CHANGELOG.md
+data-files:
+
+-- golden/**/*.json
 
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
 -- extra-source-files:
@@ -199,8 +202,16 @@ test-suite demo-haskell-test
 
   -- The entrypoint to the test suite.
   main-is:          Main.hs
+  other-modules:
+    Demo.Process.Tests
+    Paths_demo_haskell
 
   -- Test dependencies.
   build-depends:
     , base
     , demo-haskell
+    , tasty
+
+-- TODO(jaredponn): actually add some golden tests
+-- , tasty-golden
+

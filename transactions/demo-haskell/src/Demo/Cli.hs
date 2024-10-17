@@ -42,7 +42,7 @@ claimRequest :: ParserInfo (IO (Request ClaimRequest))
 claimRequest =
   Options.Applicative.info
     (claimRequestFilePathParser Options.Applicative.<**> Options.Applicative.helper)
-    (Options.Applicative.progDesc "Creates a TxInfo suitable for tx-village's bakery for creating a Lock transaction")
+    (Options.Applicative.progDesc "Creates a TxInfo suitable for tx-village's bakery for creating a Claim transaction")
 
 claimRequestFilePathParser :: Parser (IO (Request ClaimRequest))
 claimRequestFilePathParser =

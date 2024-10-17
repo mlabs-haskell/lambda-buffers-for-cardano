@@ -14,8 +14,9 @@ import Options.Applicative qualified
 
 main :: IO ()
 main = do
-  config <- Demo.Config.getDemoConfig
   demoRequest <- Monad.join $ Options.Applicative.execParser Demo.Cli.parser
+
+  config <- Demo.Config.getDemoConfig
 
   let resp = Demo.Process.process config demoRequest
 

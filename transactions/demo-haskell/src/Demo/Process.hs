@@ -54,14 +54,14 @@ process config demoRequest =
                                   request'request
                                     req
                       }
-                  changeTxOut = mkChangeTxOut req
+                  _changeTxOut = mkChangeTxOut req
                in Response'Result $
                     Result
                       { result'txInfo =
                           TxInfo
                             { txInfoInputs = request'feeInputs req
                             , txInfoOutputs =
-                                [eqValidatorTxOut, changeTxOut]
+                                [eqValidatorTxOut]
                             , txInfoFee = mempty
                             , txInfoMint = mempty
                             , txInfoDCert = []
@@ -79,7 +79,7 @@ process config demoRequest =
                       , result'response = ()
                       }
             DemoRequest'Claim req ->
-              let changeTxOut = mkChangeTxOut req
+              let _changeTxOut = mkChangeTxOut req
                   lockedUtxo = claimRequest'lockedUtxo (request'request req)
                in if txOutAddress (txInInfoResolved lockedUtxo) == eqValidatorAddress
                     then
@@ -90,7 +90,7 @@ process config demoRequest =
                                 { txInfoInputs =
                                     lockedUtxo : request'feeInputs req
                                 , txInfoOutputs =
-                                    [changeTxOut]
+                                    []
                                 , txInfoFee = mempty
                                 , txInfoMint = mempty
                                 , txInfoDCert = []
