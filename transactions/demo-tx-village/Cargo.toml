@@ -44,3 +44,5 @@ clap = { version = "4.5.11", features = ["derive"] }
 [dev-dependencies]
 data-encoding = "2.5.0"
 serial_test = "3.0.0"
+tempfile = "3.13.0"
+assert_cmd = { version = "2.0.16" }

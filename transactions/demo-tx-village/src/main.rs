@@ -18,25 +18,35 @@ async fn main() {
 
     match matches.subcommand() {
         Some(("query-utxos", sub_matches)) => {
-            if let (Some(network), Some(ogmios_url), Some(addr), option_datum) = (
+            if let (Some(network), Some(ogmios_url), Some(addr), option_datum_path) = (
                 sub_matches.get_one::<Network>("network"),
                 sub_matches.get_one::<Url>("ogmios_url"),
                 sub_matches.get_one::<plutus_ledger_api::v1::address::Address>("address"),
-                sub_matches.get_one::<plutus_ledger_api::plutus_data::PlutusData>("datum"),
+                sub_matches.get_one::<String>("datum"),
             ) {
                 query_utxos(
                     network.clone(),
                     ogmios_url.clone(),
                     addr.clone(),
-                    option_datum.clone().cloned(),
+                    option_datum_path.clone().cloned(),
                 )
                 .await;
             }
         }
         Some(("addresses", sub_matches)) => match sub_matches.subcommand() {
-            Some(("eq-validator", _sub_matches)) => {
+            Some(("eq-validator", sub_sub_matches)) => {
                 let config = config::get_config().await;
-                addresses::addresses_eq_validator(config);
+                if let Some(network) = sub_sub_matches.get_one::<String>("network")
+                {
+                    // TODO(jaredponn): October 10, 2024: Recall `1` is for the mainnet and `0`
+                    // would be the testnet. We really should use tx_bakery::chain_query::Network
+                    // i.e., we should write a clap parser for the type
+                    // `tx_bakery::chain_query::Network` and update tx-village upstream
+                    let network_u8 = if network == "mainnet" { 1 }
+                                    else if network == "testnet" { 0 }
+                                    else { panic!("invalid network value of {}", network)};
+                    addresses::addresses_eq_validator(config, network_u8);
+                }
             }
             _ => unreachable!(),
         },

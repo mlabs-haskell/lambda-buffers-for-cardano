@@ -45,11 +45,16 @@ pub fn cli() -> Command {
                 .subcommand_required(true)
                 .subcommand(Command::new("eq-validator")
                             .about("Return the human readable bech32 encoded address for the eq-validator")
+                            .arg(Arg::new("network")
+                                    .help("The Cardano network to use for the address (mainnet | testnet)")
+                                    .long("network")
+                                    .value_parser(["mainnet", "testnet"])
+                                    .default_value("testnet")
+                                    .required(true)
+                                 )
                     )
         )
 }
-
-//fn parse_lb_json_filepath_contents(str : &str) -> Result
 
 // Parses an address from a bech32 string
 fn parse_bech32(str: &str) -> Result<plutus_ledger_api::v1::address::Address, std::io::Error> {

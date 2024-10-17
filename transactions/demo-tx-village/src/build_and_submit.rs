@@ -49,18 +49,28 @@ pub async fn build_and_submit(
     let scripts = std::collections::BTreeMap::from([eq_validator.1.with_script_hash()]);
 
     // Define the strategy to find a suitable collateral
-    let collateral = tx_bakery::CollateralStrategy::Automatic { amount: 5_000_000 };
+    let collateral = tx_bakery::CollateralStrategy::Automatic { amount: 5_000_000 }; // TODO(jaredponn)
+                                                                                     // October 17,
+                                                                                     // 2024: this
+                                                                                     //       should
+                                                                                     //       be
+                                                                                     //       adjustable
+                                                                                     //       based
+                                                                                     //       on a
+                                                                                     //       cli
+                                                                                     //       argument
 
     // Initialise TxBakery by fetching protocol parameters from the ChainQuery
     let tx_bakery = tx_bakery::TxBakery::init(&ogmios_client).await?;
 
-    // // Define the strategy to handle change outpu
+    // Define the strategy to handle change outpu
     let change_strategy = tx_bakery::ChangeStrategy::Address(wallet.get_change_addr());
 
     // // Transaction with context will attach required scripts, collateral, etc.
     let tx = tx_bakery::TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
-    eprintln!("Bake and delivering transaction...");
+    eprintln!("Baking and delivering transaction...");
+
     // Bake, sign and submit the transaction
     let tx_hash = tx_bakery
         .bake_and_deliver(&ogmios_client, &wallet, tx)
@@ -69,6 +79,8 @@ pub async fn build_and_submit(
 
     eprintln!("Awaiting transaction {:?} to be confirmed...", tx_hash);
     ogmios_client.await_tx_confirm(&tx_hash).await.unwrap();
+
+    eprintln!("Transaction has been confirmed!");
 
     Ok(())
 }
