@@ -1,8 +1,7 @@
+use plutus_ledger_api::json::Json;
 use tx_bakery::chain_query::{ChainQuery, Network};
 use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
 use url::Url;
-use plutus_ledger_api::json::Json;
-
 
 /// Queries UTxOs relevant for the demo protocol.
 /// More precisely, this does the following:
@@ -24,16 +23,19 @@ pub async fn query_utxos(
 
     let utxo_lookups = ogmios_client.query_utxos_by_addr(&addr).await;
 
-
     match utxo_lookups {
         Ok(mut utxos) => {
             match option_datum_path {
                 Some(path) => {
                     let contents = std::fs::read_to_string(&path).expect(&format!(
                         "Couldn't read datum encoded as JSON file at {}.",
-                           &path));
-                    let datum: plutus_ledger_api::plutus_data::PlutusData = Json::from_json_string(&contents)
-                        .expect(&format!("Couldn't deserialize JSON datum of file {}", &path));
+                        &path
+                    ));
+                    let datum: plutus_ledger_api::plutus_data::PlutusData =
+                        Json::from_json_string(&contents).expect(&format!(
+                            "Couldn't deserialize JSON datum of file {}",
+                            &path
+                        ));
 
                     utxos.retain(|_, tx_out| {
                         if let plutus_ledger_api::v2::datum::OutputDatum::InlineDatum(

@@ -36,15 +36,18 @@ async fn main() {
         Some(("addresses", sub_matches)) => match sub_matches.subcommand() {
             Some(("eq-validator", sub_sub_matches)) => {
                 let config = config::get_config().await;
-                if let Some(network) = sub_sub_matches.get_one::<String>("network")
-                {
+                if let Some(network) = sub_sub_matches.get_one::<String>("network") {
                     // TODO(jaredponn): October 10, 2024: Recall `1` is for the mainnet and `0`
                     // would be the testnet. We really should use tx_bakery::chain_query::Network
                     // i.e., we should write a clap parser for the type
                     // `tx_bakery::chain_query::Network` and update tx-village upstream
-                    let network_u8 = if network == "mainnet" { 1 }
-                                    else if network == "testnet" { 0 }
-                                    else { panic!("invalid network value of {}", network)};
+                    let network_u8 = if network == "mainnet" {
+                        1
+                    } else if network == "testnet" {
+                        0
+                    } else {
+                        panic!("invalid network value of {}", network)
+                    };
                     addresses::addresses_eq_validator(config, network_u8);
                 }
             }
