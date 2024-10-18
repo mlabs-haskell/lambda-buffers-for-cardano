@@ -28,7 +28,7 @@ async fn main() {
                     network.clone(),
                     ogmios_url.clone(),
                     addr.clone(),
-                    option_datum_path.clone().cloned(),
+                    option_datum_path.cloned(),
                 )
                 .await;
             }
