@@ -19,6 +19,7 @@ use tx_bakery_ogmios::{
 use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
 use url::Url;
 
+/// Calls the demo-tx-village CLI to return the eq_validator address
 pub fn eq_validator_address(
     config_path: &str,
     network: &str,
@@ -38,6 +39,7 @@ pub fn eq_validator_address(
     cardano_serialization_lib::address::Address::from_bech32(&stdout_contents).unwrap()
 }
 
+/// Calls the demo-tx-village CLI to query the blockchain for UTxOs
 pub fn query_utxos(
     config_path: &str,
     network: &str,
@@ -56,17 +58,15 @@ pub fn query_utxos(
         .arg("--network")
         .arg(network);
 
-    match option_plutus_data {
-        Some(plutus_data) => {
+    if let Some(plutus_data) = option_plutus_data 
+            {
             let json_string_plutus_data = plutus_data.to_json_string();
 
-            temp_file.write(json_string_plutus_data.as_bytes()).unwrap();
+            temp_file.write_all(json_string_plutus_data.as_bytes()).unwrap();
             assert = assert
                 .arg("--lb-json-datum-filepath")
                 .arg(temp_file.path().to_str().unwrap());
         }
-        None => {}
-    }
 
     let stdout_contents =
         String::from_utf8(assert.assert().success().get_output().stdout.clone()).unwrap();
@@ -75,15 +75,16 @@ pub fn query_utxos(
 
     temp_file.close().unwrap();
 
-    return result;
+    result
 }
 
+/// Calls the demo-tx-village CLI to build and submit a tx
 pub fn build_and_submit(
     config_path: &str,
     network: &str,
     signing_key_file: &str,
     tx_info: plutus_ledger_api::v2::transaction::TransactionInfo,
-) -> () {
+) {
     let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
 
     let assert = cmd
@@ -99,8 +100,6 @@ pub fn build_and_submit(
         String::from_utf8(assert.assert().success().get_output().stderr.clone()).unwrap();
 
     eprintln!("{}", stderr_contents);
-
-    return ();
 }
 
 /// Returns a triplet of:
@@ -116,17 +115,16 @@ pub async fn get_the_wallet(
     KeyWallet,
     cardano_serialization_lib::address::Address,
 ) {
-    let entries = std::fs::read_dir::<std::path::PathBuf>(WALLETS_DIR.try_into().unwrap());
+    let entries = std::fs::read_dir::<std::path::PathBuf>(WALLETS_DIR.into());
 
     let an_skey: std::path::PathBuf = entries
         .unwrap()
-        .filter(|result_dir_entry| match result_dir_entry {
+        .find(|result_dir_entry| match result_dir_entry {
             Ok(dir_entry) => dir_entry.path().extension() == Some(std::ffi::OsStr::new("skey")),
             Err(_) => false,
         })
-        .next()
         .unwrap()
-        .expect("REASON")
+        .expect("Failed to find a secret key file")
         .path();
     let key_wallet = KeyWallet::new(an_skey.clone(), None::<std::path::PathBuf>)
         .await
@@ -214,19 +212,18 @@ pub fn setup_test_data(
 }
 
 pub async fn read_script(path: &str) -> ScriptOrRef {
-    let conf_str = fs::read_to_string(path).await.expect(&format!(
-        "Couldn't read plutarch config JSON file at {}.",
-        path
-    ));
+    let conf_str = fs::read_to_string(path).await.
+        unwrap_or_else(|err| 
+        panic!( "Couldn't read plutarch config JSON file at {} with error {}.", path,err));
 
     let conf: Config = Json::from_json_string(&conf_str)
-        .expect(&format!("Couldn't deserialize JSON data of file {}", path));
+        .unwrap_or_else(|err| panic!("Couldn't deserialize JSON data of file {} with error {}", path, err));
 
     let Script(raw_script) = conf.eq_validator;
 
-    ScriptOrRef::from_bytes(raw_script).expect(&format!(
-        "Couldn't deserialize PlutusScript of file {}.",
-        path
+    ScriptOrRef::from_bytes(raw_script).unwrap_or_else(|err| panic!(
+        "Couldn't deserialize PlutusScript of file {} with error {}",
+        path, err
     ))
 }
 

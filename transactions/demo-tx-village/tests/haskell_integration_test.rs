@@ -41,7 +41,7 @@ fn demo_haskell_lock_response(config_path: &str, request: Request<LockRequest>) 
 
     temp_file.close().unwrap();
 
-    return result;
+    result
 }
 
 fn demo_haskell_claim_response(config_path: &str, request: Request<ClaimRequest>) -> Response<()> {
@@ -73,7 +73,7 @@ fn demo_haskell_claim_response(config_path: &str, request: Request<ClaimRequest>
 
     temp_file.close().unwrap();
 
-    return result;
+    result
 }
 
 #[tokio::test]
