@@ -17,8 +17,6 @@ pub fn cli() -> Command {
             Command::new("build-and-submit")
                 .about("Builds and submits a transaction with a provided `Request<_>` on STDIN outputting the LB JSON encoded TransactionHash on STDOUT")
                 )
-                // .arg(arg!(<REMOTE> "The remote to clone"))
-                // .arg_required_else_help(true),
         )
         )
         .subcommand(
