@@ -122,6 +122,9 @@ process config demoRequest =
 
 {- | Creates the change 'TxOut' from a 'Request' which should be the last
 element in the list of 'txInfoOutputs' of a 'TxInInfo'
+
+NOTE(jaredponn) October 18,2024: this is actually not needed -- tx-village will
+automatically put this change output there for us.
 -}
 mkChangeTxOut :: Request a -> TxOut
 mkChangeTxOut req =
