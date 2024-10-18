@@ -1,4 +1,5 @@
 use plutus_ledger_api::json::Json;
+use plutus_ledger_api::plutus_data::IsPlutusData;
 use tx_bakery::chain_query::{ChainQuery, Network};
 use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
 use url::Url;
@@ -31,24 +32,25 @@ pub async fn query_utxos(
     if let Some(path) = option_datum_path {
         let contents = std::fs::read_to_string(&path).unwrap_or_else(|err| {
             panic!(
-                "Couldn't read datum encoded as JSON file at {} with error {}.",
+                "Couldn't read EqDatum encoded as JSON file at {} with error {}.",
                 &path, err
             )
         });
-        let datum: plutus_ledger_api::plutus_data::PlutusData = Json::from_json_string(&contents)
+        let datum: lbf_demo_plutus_api::demo::plutus::EqDatum = Json::from_json_string(&contents)
             .unwrap_or_else(|err| {
                 panic!(
-                    "Couldn't deserialize JSON datum of file {} with error {}",
+                    "Couldn't deserialize JSON EqDatum of file {} with error {}",
                     &path, err
                 )
             });
+        let plutus_data_datum: plutus_ledger_api::plutus_data::PlutusData = datum.to_plutus_data();
 
         utxos.retain(|_, tx_out| {
             if let plutus_ledger_api::v2::datum::OutputDatum::InlineDatum(
                 plutus_ledger_api::v2::datum::Datum(inline_datum),
             ) = &tx_out.datum
             {
-                datum == *inline_datum
+                plutus_data_datum == *inline_datum
             } else {
                 false
             }

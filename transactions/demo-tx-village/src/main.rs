@@ -12,8 +12,6 @@ use url::Url;
 
 #[tokio::main]
 async fn main() {
-    // let config = config::get_config().await;
-
     let matches = cli::cli().get_matches();
 
     match matches.subcommand() {
@@ -22,7 +20,7 @@ async fn main() {
                 sub_matches.get_one::<Network>("network"),
                 sub_matches.get_one::<Url>("ogmios_url"),
                 sub_matches.get_one::<plutus_ledger_api::v1::address::Address>("address"),
-                sub_matches.get_one::<String>("datum"),
+                sub_matches.get_one::<String>("eq-datum"),
             ) {
                 query_utxos(
                     network.clone(),

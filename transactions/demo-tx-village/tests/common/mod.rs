@@ -48,7 +48,7 @@ pub fn query_utxos(
     config_path: &str,
     network: &tx_bakery::chain_query::Network,
     addr: cardano_serialization_lib::address::Address,
-    option_plutus_data: Option<plutus_ledger_api::plutus_data::PlutusData>,
+    option_eq_datum: Option<lbf_demo_plutus_api::demo::plutus::EqDatum>,
 ) -> std::vec::Vec<plutus_ledger_api::v2::transaction::TxInInfo> {
     let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
 
@@ -62,14 +62,14 @@ pub fn query_utxos(
         .arg("--network")
         .arg(network_to_cli_string(&network));
 
-    if let Some(plutus_data) = option_plutus_data {
-        let json_string_plutus_data = plutus_data.to_json_string();
+    if let Some(eq_datum) = option_eq_datum {
+        let json_string_eq_datum = eq_datum.to_json_string();
 
         temp_file
-            .write_all(json_string_plutus_data.as_bytes())
+            .write_all(json_string_eq_datum.as_bytes())
             .unwrap();
         assert = assert
-            .arg("--lb-json-datum-filepath")
+            .arg("--lb-json-eq-datum-filepath")
             .arg(temp_file.path().to_str().unwrap());
     }
 

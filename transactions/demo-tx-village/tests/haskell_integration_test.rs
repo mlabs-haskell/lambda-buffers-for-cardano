@@ -4,7 +4,6 @@ use lbf_demo_plutus_api::demo::request::{ClaimRequest, LockRequest, Request};
 use lbf_demo_plutus_api::demo::response::Response;
 use num_bigint::BigInt;
 use plutus_ledger_api::json::Json;
-use plutus_ledger_api::plutus_data::IsPlutusData;
 use plutus_ledger_api::v1::transaction::POSIXTime;
 use serial_test::serial;
 use std::io::Write;
@@ -143,7 +142,7 @@ async fn run_haskell_integration_test(config_path: &str) {
             config_path,
             &network,
             eq_validator_addr.clone(),
-            Some(example_eq_datum_a.to_plutus_data()),
+            Some(example_eq_datum_a),
         );
 
         let utxo_for_datum = &utxos_for_datum[0];
@@ -238,7 +237,7 @@ async fn run_haskell_integration_test(config_path: &str) {
             config_path,
             &network,
             eq_validator_addr.clone(),
-            Some(example_eq_datum_b.to_plutus_data()),
+            Some(example_eq_datum_b),
         );
 
         let utxo_for_datum = &utxos_for_datum[0];
