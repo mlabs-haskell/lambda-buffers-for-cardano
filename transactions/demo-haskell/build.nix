@@ -1,3 +1,6 @@
+# DESCRIPTION:
+# - A Haskell demo project which provides a CLI interface for building TxInfos
+# suitable for tx-village to bake and submit such a transaction
 { inputs, ... }:
 {
   perSystem = { config, system, ... }:
@@ -5,7 +8,7 @@
       hsFlake = inputs.flake-lang.lib.${system}.haskellPlutusFlake {
         src = ./.;
 
-        name = "lbt-plutus-haskell";
+        name = "demo-haskell";
 
         inherit (config.settings.haskell) index-state compiler-nix-name;
 

@@ -1,3 +1,12 @@
+# DESCRIPTION:
+# - A Rust demo project which provides an interface to tx-village suitable for
+# interacting with the demo project
+# In particular, this provides the following functionality to interact with the
+# demo project
+#   - Building and submitting transactions which may use the EqValidator script
+#   - Querying UTxOs by human readable bech32 addresses and optionally filtering
+#     them by datum
+#   - Querying the human readable bech32 address of the EqValidator script
 { inputs, ... }: {
   perSystem = { config, inputs', system, pkgs, ... }:
 
