@@ -58,15 +58,16 @@ pub fn query_utxos(
         .arg("--network")
         .arg(network);
 
-    if let Some(plutus_data) = option_plutus_data 
-            {
-            let json_string_plutus_data = plutus_data.to_json_string();
+    if let Some(plutus_data) = option_plutus_data {
+        let json_string_plutus_data = plutus_data.to_json_string();
 
-            temp_file.write_all(json_string_plutus_data.as_bytes()).unwrap();
-            assert = assert
-                .arg("--lb-json-datum-filepath")
-                .arg(temp_file.path().to_str().unwrap());
-        }
+        temp_file
+            .write_all(json_string_plutus_data.as_bytes())
+            .unwrap();
+        assert = assert
+            .arg("--lb-json-datum-filepath")
+            .arg(temp_file.path().to_str().unwrap());
+    }
 
     let stdout_contents =
         String::from_utf8(assert.assert().success().get_output().stdout.clone()).unwrap();
@@ -212,19 +213,28 @@ pub fn setup_test_data(
 }
 
 pub async fn read_script(path: &str) -> ScriptOrRef {
-    let conf_str = fs::read_to_string(path).await.
-        unwrap_or_else(|err| 
-        panic!( "Couldn't read plutarch config JSON file at {} with error {}.", path,err));
+    let conf_str = fs::read_to_string(path).await.unwrap_or_else(|err| {
+        panic!(
+            "Couldn't read plutarch config JSON file at {} with error {}.",
+            path, err
+        )
+    });
 
-    let conf: Config = Json::from_json_string(&conf_str)
-        .unwrap_or_else(|err| panic!("Couldn't deserialize JSON data of file {} with error {}", path, err));
+    let conf: Config = Json::from_json_string(&conf_str).unwrap_or_else(|err| {
+        panic!(
+            "Couldn't deserialize JSON data of file {} with error {}",
+            path, err
+        )
+    });
 
     let Script(raw_script) = conf.eq_validator;
 
-    ScriptOrRef::from_bytes(raw_script).unwrap_or_else(|err| panic!(
-        "Couldn't deserialize PlutusScript of file {} with error {}",
-        path, err
-    ))
+    ScriptOrRef::from_bytes(raw_script).unwrap_or_else(|err| {
+        panic!(
+            "Couldn't deserialize PlutusScript of file {} with error {}",
+            path, err
+        )
+    })
 }
 
 pub async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
