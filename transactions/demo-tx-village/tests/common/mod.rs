@@ -22,7 +22,7 @@ use url::Url;
 /// Calls the demo-tx-village CLI to return the eq_validator address
 pub fn eq_validator_address(
     config_path: &str,
-    network: &str,
+    network: &tx_bakery::chain_query::Network,
 ) -> cardano_serialization_lib::address::Address {
     let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
 
@@ -31,7 +31,7 @@ pub fn eq_validator_address(
         .arg("addresses")
         .arg("eq-validator")
         .arg("--network")
-        .arg(network);
+        .arg(network_to_cli_string(&network));
 
     let stdout_contents =
         String::from_utf8(assert.assert().success().get_output().stdout.clone()).unwrap();
@@ -42,7 +42,7 @@ pub fn eq_validator_address(
 /// Calls the demo-tx-village CLI to query the blockchain for UTxOs
 pub fn query_utxos(
     config_path: &str,
-    network: &str,
+    network: &tx_bakery::chain_query::Network,
     addr: cardano_serialization_lib::address::Address,
     option_plutus_data: Option<plutus_ledger_api::plutus_data::PlutusData>,
 ) -> std::vec::Vec<plutus_ledger_api::v2::transaction::TxInInfo> {
@@ -56,7 +56,7 @@ pub fn query_utxos(
         .arg("--address")
         .arg(addr.to_bech32(None).unwrap())
         .arg("--network")
-        .arg(network);
+        .arg(network_to_cli_string(&network));
 
     if let Some(plutus_data) = option_plutus_data {
         let json_string_plutus_data = plutus_data.to_json_string();
@@ -82,7 +82,7 @@ pub fn query_utxos(
 /// Calls the demo-tx-village CLI to build and submit a tx
 pub fn build_and_submit(
     config_path: &str,
-    network: &str,
+    network: &tx_bakery::chain_query::Network,
     signing_key_file: &str,
     tx_info: plutus_ledger_api::v2::transaction::TransactionInfo,
 ) {
@@ -94,7 +94,7 @@ pub fn build_and_submit(
         .arg("--signing-key-file")
         .arg(signing_key_file)
         .arg("--network")
-        .arg(network)
+        .arg(network_to_cli_string(&network))
         .write_stdin(tx_info.to_json_string());
 
     let stderr_contents =
@@ -110,7 +110,7 @@ pub fn build_and_submit(
 /// WARNING: this assumes that we used tx-villages plutip launcher which puts the wallets in the
 /// `WALLETS_DIR` directory.
 pub async fn get_the_wallet(
-    network: u8,
+    network: &tx_bakery::chain_query::Network,
 ) -> (
     std::path::PathBuf,
     KeyWallet,
@@ -136,7 +136,7 @@ pub async fn get_the_wallet(
         an_skey.clone(),
         key_wallet,
         cardano_serialization_lib::address::EnterpriseAddress::new(
-            network,
+            network.to_network_id(),
             &cardano_serialization_lib::address::StakeCredential::from_keyhash(
                 &cardano_serialization_lib::crypto::Ed25519KeyHash::from_bytes(
                     key_wallet_change_pkh,
@@ -256,4 +256,11 @@ pub async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
     let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
 
     (plutip, ogmios_launcher, ogmios_client)
+}
+
+fn network_to_cli_string(network: &tx_bakery::chain_query::Network) -> &str {
+    match network {
+        tx_bakery::chain_query::Network::Testnet => { "testnet" }
+        tx_bakery::chain_query::Network::Mainnet => { "mainnet" }
+    }
 }

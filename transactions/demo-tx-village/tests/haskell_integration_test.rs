@@ -12,6 +12,7 @@ use std::process::Command;
 use std::time::SystemTime;
 use tx_bakery::wallet::Wallet;
 
+/// Calls the `demo-haskell` CLI to produce a `Response` suitable for creating a lock tx
 fn demo_haskell_lock_response(config_path: &str, request: Request<LockRequest>) -> Response<()> {
     let mut temp_file = tempfile::NamedTempFile::new().unwrap();
 
@@ -44,6 +45,7 @@ fn demo_haskell_lock_response(config_path: &str, request: Request<LockRequest>) 
     result
 }
 
+/// Calls the `demo-haskell` CLI to produce a `Response` suitable for creating a claim tx
 fn demo_haskell_claim_response(config_path: &str, request: Request<ClaimRequest>) -> Response<()> {
     let mut temp_file = tempfile::NamedTempFile::new().unwrap();
 
@@ -88,19 +90,15 @@ async fn haskell_plutarch_integration_test() {
 
     let (plutip, _ogmios_launcher, _ogmios) = common::setup_plutip_test().await;
 
+    let network = plutip.get_network();
     let (skey_path, key_wallet, wallet_addr) =
-        common::get_the_wallet(plutip.get_network().to_network_id()).await;
-    let network = if plutip.get_network().to_network_id() == 1 {
-        "mainnet"
-    } else {
-        "testnet"
-    };
+        common::get_the_wallet(&network).await;
 
     {
         eprintln!("Creating a UTxO for the lock tx");
         // Create the UTxO for the lock tx
         // -------------------------------
-        let change_utxos = common::query_utxos(config_path, network, wallet_addr.clone(), None);
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
         eprintln!(
             "Change UTxOs for {} with secret key file {} are: {:?}",
@@ -129,7 +127,7 @@ async fn haskell_plutarch_integration_test() {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
-                    network,
+                    &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
                 );
@@ -145,7 +143,7 @@ async fn haskell_plutarch_integration_test() {
         // -----------------------------------------
         eprintln!("Claiming the previous UTxO...");
 
-        let change_utxos = common::query_utxos(config_path, network, wallet_addr.clone(), None);
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
         eprintln!(
             "Change UTxOs for {} with secret key file {} are: {:?}",
@@ -154,13 +152,13 @@ async fn haskell_plutarch_integration_test() {
             change_utxos
         );
 
-        let change_utxos = common::query_utxos(config_path, network, wallet_addr.clone(), None);
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
-        let eq_validator_addr = common::eq_validator_address(config_path, network);
+        let eq_validator_addr = common::eq_validator_address(config_path, &network);
 
         let utxos_for_datum = common::query_utxos(
             config_path,
-            network,
+            &network,
             eq_validator_addr.clone(),
             Some(example_eq_datum_a.to_plutus_data()),
         );
@@ -193,7 +191,7 @@ async fn haskell_plutarch_integration_test() {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
-                    network,
+                    &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
                 );
@@ -208,7 +206,7 @@ async fn haskell_plutarch_integration_test() {
         eprintln!("Creating a UTxO for the lock tx");
         // Create the UTxO for the lock tx
         // -------------------------------
-        let change_utxos = common::query_utxos(config_path, network, wallet_addr.clone(), None);
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
         eprintln!(
             "Change UTxOs for {} with secret key file {} are: {:?}",
@@ -237,7 +235,7 @@ async fn haskell_plutarch_integration_test() {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
-                    network,
+                    &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
                 );
@@ -253,7 +251,7 @@ async fn haskell_plutarch_integration_test() {
         // -----------------------------------------
         eprintln!("Claiming the previous UTxO...");
 
-        let change_utxos = common::query_utxos(config_path, network, wallet_addr.clone(), None);
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
         eprintln!(
             "Change UTxOs for {} with secret key file {} are: {:?}",
@@ -262,13 +260,13 @@ async fn haskell_plutarch_integration_test() {
             change_utxos
         );
 
-        let change_utxos = common::query_utxos(config_path, network, wallet_addr.clone(), None);
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
-        let eq_validator_addr = common::eq_validator_address(config_path, network);
+        let eq_validator_addr = common::eq_validator_address(config_path, &network);
 
         let utxos_for_datum = common::query_utxos(
             config_path,
-            network,
+            &network,
             eq_validator_addr.clone(),
             Some(example_eq_datum_b.to_plutus_data()),
         );
@@ -301,7 +299,7 @@ async fn haskell_plutarch_integration_test() {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
-                    network,
+                    &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
                 );
