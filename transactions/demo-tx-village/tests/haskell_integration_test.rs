@@ -91,7 +91,7 @@ async fn run_haskell_integration_test(config_path: &str) {
 
     let (skey_path, key_wallet, wallet_addr) = common::get_the_wallet(&network).await;
 
-    // Create the UTxO for the lock tx
+    // Create the UTxO for the lock command (storing the datum)
     // -------------------------------
     {
         eprintln!("Storing EqDatum A @ EqV");
@@ -130,7 +130,7 @@ async fn run_haskell_integration_test(config_path: &str) {
         eprintln!("Successfully stored EqDatum A @ EqV with {:?}", tx_hash);
     }
 
-    // Create the UTxO for claiming the lock tx
+    // Create the tx for claiming the locked datum
     // -----------------------------------------
     {
         eprintln!("Checking if EqDatum A is the same as the one previously stored (it should be)");
@@ -185,7 +185,7 @@ async fn run_haskell_integration_test(config_path: &str) {
         );
     }
 
-    // Create the UTxO for the lock tx
+    // Create the UTxO for the lock command (storing the datum)
     // -------------------------------
     {
         eprintln!("Storing EqDatum B @ EqVal");
@@ -223,7 +223,7 @@ async fn run_haskell_integration_test(config_path: &str) {
         eprintln!("Successfully stored EqDatum B with {:?}", tx_hash);
     }
 
-    // Create the UTxO for claiming the lock tx
+    // Create the tx for claiming the locked datum
     // -----------------------------------------
     {
         eprintln!(
@@ -241,11 +241,6 @@ async fn run_haskell_integration_test(config_path: &str) {
             Some(example_eq_datum_b.to_plutus_data()),
         );
 
-        // eprintln!(
-        //     "UTxOs with the datum at address {} are: {:?}",
-        //     eq_validator_addr.to_bech32(None).unwrap(),
-        //     utxos_for_datum
-        // );
         let utxo_for_datum = &utxos_for_datum[0];
 
         let current_time = SystemTime::now()
