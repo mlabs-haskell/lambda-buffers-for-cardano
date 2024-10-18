@@ -84,9 +84,13 @@ pub async fn build_and_submit(
         .await
         .unwrap_or_else(|err| panic!("Failed to bake and deliver transaction with error {}", err));
 
-    eprintln!("Awaiting transaction {:?} to be confirmed...", tx_hash);
+    eprintln!("Awaiting transaction ({:?}) to be confirmed...", tx_hash);
 
     ogmios_client.await_tx_confirm(&tx_hash).await.unwrap();
 
-    eprintln!("Transaction {:?} has been confirmed!", tx_hash);
+    eprintln!("Transaction ({:?}) has been confirmed!", tx_hash);
+
+    let tx_hash_lb_json_str = plutus_ledger_api::json::Json::to_json_string(&tx_hash);
+
+    print!("{}", tx_hash_lb_json_str);
 }

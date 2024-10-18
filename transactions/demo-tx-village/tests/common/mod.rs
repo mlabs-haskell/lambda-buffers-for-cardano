@@ -1,3 +1,7 @@
+//! Common functionality for writing tests. Namely:
+//! - Wrappers for calling the `demo-tx-village` CLI to serialize and deserialize inputs / outputs
+//! to a Rust type
+//! - Setting up the plutip testnet along with other dependencies
 use assert_cmd::Command;
 use lbf_demo_config_api::demo::config::{Config, Script};
 use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer, Product, Record, Sum};
@@ -85,7 +89,7 @@ pub fn build_and_submit(
     network: &tx_bakery::chain_query::Network,
     signing_key_file: &str,
     tx_info: plutus_ledger_api::v2::transaction::TransactionInfo,
-) {
+) -> plutus_ledger_api::v1::transaction::TransactionHash {
     let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
 
     let assert = cmd
@@ -97,10 +101,18 @@ pub fn build_and_submit(
         .arg(network_to_cli_string(&network))
         .write_stdin(tx_info.to_json_string());
 
-    let stderr_contents =
-        String::from_utf8(assert.assert().success().get_output().stderr.clone()).unwrap();
+    let assert_success = assert.assert().success();
+    let output = assert_success.get_output();
 
-    eprintln!("{}", stderr_contents);
+    let stderr_contents = String::from_utf8(output.stderr.clone()).unwrap();
+
+    eprintln!("demo-tx-village stderr:\n```\n{}```", stderr_contents);
+
+    let stdout_contents = String::from_utf8(output.stdout.clone()).unwrap();
+
+    let result = Json::from_json_string(&stdout_contents).unwrap();
+
+    result
 }
 
 /// Returns a triplet of:
@@ -212,6 +224,7 @@ pub fn setup_test_data(
     )
 }
 
+/// Reads scripts at the provided path. This is helpful when used for `setup_test_data`.
 pub async fn read_script(path: &str) -> ScriptOrRef {
     let conf_str = fs::read_to_string(path).await.unwrap_or_else(|err| {
         panic!(
@@ -237,6 +250,7 @@ pub async fn read_script(path: &str) -> ScriptOrRef {
     })
 }
 
+/// Sets up plutip + ogmios for the tests
 pub async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
     let plutip_config = PlutipConfigBuilder::default()._utxos(5).build().unwrap();
     let plutip = Plutip::start(plutip_config).await.unwrap();
@@ -260,7 +274,7 @@ pub async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
 
 fn network_to_cli_string(network: &tx_bakery::chain_query::Network) -> &str {
     match network {
-        tx_bakery::chain_query::Network::Testnet => { "testnet" }
-        tx_bakery::chain_query::Network::Mainnet => { "mainnet" }
+        tx_bakery::chain_query::Network::Testnet => "testnet",
+        tx_bakery::chain_query::Network::Mainnet => "mainnet",
     }
 }

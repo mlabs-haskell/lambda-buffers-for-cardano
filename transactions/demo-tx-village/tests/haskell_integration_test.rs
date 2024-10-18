@@ -78,34 +78,24 @@ fn demo_haskell_claim_response(config_path: &str, request: Request<ClaimRequest>
     result
 }
 
-#[tokio::test]
-#[serial]
-async fn haskell_plutarch_integration_test() {
-    let config_path = "data/demo-plutarch-config.json";
-
-    let plutarch_script = common::read_script(config_path).await.as_validator();
+/// Runs an integration test with Haskell with the provided config path
+async fn run_haskell_integration_test(config_path: &str) {
+    let script = common::read_script(config_path).await.as_validator();
 
     let ((example_eq_datum_a, example_eq_redeemer_a), (example_eq_datum_b, example_eq_redeemer_b)) =
-        common::setup_test_data(plutarch_script.0.clone());
+        common::setup_test_data(script.0.clone());
 
     let (plutip, _ogmios_launcher, _ogmios) = common::setup_plutip_test().await;
 
     let network = plutip.get_network();
-    let (skey_path, key_wallet, wallet_addr) =
-        common::get_the_wallet(&network).await;
 
+    let (skey_path, key_wallet, wallet_addr) = common::get_the_wallet(&network).await;
+
+    // Create the UTxO for the lock tx
+    // -------------------------------
     {
-        eprintln!("Creating a UTxO for the lock tx");
-        // Create the UTxO for the lock tx
-        // -------------------------------
+        eprintln!("Storing EqDatum A @ EqV");
         let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
-
-        eprintln!(
-            "Change UTxOs for {} with secret key file {} are: {:?}",
-            wallet_addr.to_bech32(None).unwrap(),
-            skey_path.display(),
-            change_utxos
-        );
 
         let current_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -123,34 +113,27 @@ async fn haskell_plutarch_integration_test() {
                 },
             },
         );
-        match lock_response {
+        let tx_hash = match lock_response {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
                     &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
-                );
+                )
             }
             lbf_demo_plutus_api::demo::response::Response::Error(err) => {
                 panic!("{:?}", err)
             }
-        }
+        };
+
+        eprintln!("Successfully stored EqDatum A @ EqV with {:?}", tx_hash);
     }
 
+    // Create the UTxO for claiming the lock tx
+    // -----------------------------------------
     {
-        // Create the UTxO for claiming the lock tx
-        // -----------------------------------------
-        eprintln!("Claiming the previous UTxO...");
-
-        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
-
-        eprintln!(
-            "Change UTxOs for {} with secret key file {} are: {:?}",
-            wallet_addr.to_bech32(None).unwrap(),
-            skey_path.display(),
-            change_utxos
-        );
+        eprintln!("Checking if EqDatum A is the same as the one previously stored (it should be)");
 
         let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
@@ -163,11 +146,6 @@ async fn haskell_plutarch_integration_test() {
             Some(example_eq_datum_a.to_plutus_data()),
         );
 
-        eprintln!(
-            "UTxOs with the datum at address {} are: {:?}",
-            eq_validator_addr.to_bech32(None).unwrap(),
-            utxos_for_datum
-        );
         let utxo_for_datum = &utxos_for_datum[0];
 
         let current_time = SystemTime::now()
@@ -187,33 +165,31 @@ async fn haskell_plutarch_integration_test() {
                 },
             },
         );
-        match claim_response {
+        let tx_hash = match claim_response {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
                     &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
-                );
+                )
             }
             lbf_demo_plutus_api::demo::response::Response::Error(err) => {
                 panic!("{:?}", err)
             }
-        }
-    }
-
-    {
-        eprintln!("Creating a UTxO for the lock tx");
-        // Create the UTxO for the lock tx
-        // -------------------------------
-        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
+        };
 
         eprintln!(
-            "Change UTxOs for {} with secret key file {} are: {:?}",
-            wallet_addr.to_bech32(None).unwrap(),
-            skey_path.display(),
-            change_utxos
+            "Successfully checked that they are indeed the same in transaction {:?}",
+            tx_hash
         );
+    }
+
+    // Create the UTxO for the lock tx
+    // -------------------------------
+    {
+        eprintln!("Storing EqDatum B @ EqVal");
+        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
 
         let current_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -231,33 +207,27 @@ async fn haskell_plutarch_integration_test() {
                 },
             },
         );
-        match lock_response {
+        let tx_hash = match lock_response {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
                     &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
-                );
+                )
             }
             lbf_demo_plutus_api::demo::response::Response::Error(err) => {
                 panic!("{:?}", err)
             }
-        }
+        };
+        eprintln!("Successfully stored EqDatum B with {:?}", tx_hash);
     }
 
+    // Create the UTxO for claiming the lock tx
+    // -----------------------------------------
     {
-        // Create the UTxO for claiming the lock tx
-        // -----------------------------------------
-        eprintln!("Claiming the previous UTxO...");
-
-        let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
-
         eprintln!(
-            "Change UTxOs for {} with secret key file {} are: {:?}",
-            wallet_addr.to_bech32(None).unwrap(),
-            skey_path.display(),
-            change_utxos
+            "Checking if Eq Datum A is different to the one previously stored (it should be)"
         );
 
         let change_utxos = common::query_utxos(config_path, &network, wallet_addr.clone(), None);
@@ -271,11 +241,11 @@ async fn haskell_plutarch_integration_test() {
             Some(example_eq_datum_b.to_plutus_data()),
         );
 
-        eprintln!(
-            "UTxOs with the datum at address {} are: {:?}",
-            eq_validator_addr.to_bech32(None).unwrap(),
-            utxos_for_datum
-        );
+        // eprintln!(
+        //     "UTxOs with the datum at address {} are: {:?}",
+        //     eq_validator_addr.to_bech32(None).unwrap(),
+        //     utxos_for_datum
+        // );
         let utxo_for_datum = &utxos_for_datum[0];
 
         let current_time = SystemTime::now()
@@ -295,18 +265,37 @@ async fn haskell_plutarch_integration_test() {
                 },
             },
         );
-        match claim_response {
+        let tx_hash = match claim_response {
             lbf_demo_plutus_api::demo::response::Response::Result(result) => {
                 common::build_and_submit(
                     config_path,
                     &network,
                     skey_path.to_str().unwrap(),
                     result.tx_info,
-                );
+                )
             }
             lbf_demo_plutus_api::demo::response::Response::Error(err) => {
                 panic!("{:?}", err)
             }
-        }
+        };
+
+        eprintln!(
+            "Successfully check that they are indeed different in transaction {:?}",
+            tx_hash
+        );
     }
+}
+
+#[tokio::test]
+#[serial]
+async fn haskell_plutarch_integration_test() {
+    let config_path = "data/demo-plutarch-config.json";
+    run_haskell_integration_test(config_path).await;
+}
+
+#[tokio::test]
+#[serial]
+async fn haskell_plutustx_integration_test() {
+    let config_path = "data/demo-plutustx-config.json";
+    run_haskell_integration_test(config_path).await;
 }

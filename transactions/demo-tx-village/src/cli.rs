@@ -15,7 +15,7 @@ pub fn cli() -> Command {
             OgmiosOpts::augment_args(
             KeyWalletOpts::augment_args(
             Command::new("build-and-submit")
-                .about("Builds and submits a transaction")
+                .about("Builds and submits a transaction with a provided `Request<_>` on STDIN outputting the LB JSON encoded TransactionHash on STDOUT")
                 )
                 // .arg(arg!(<REMOTE> "The remote to clone"))
                 // .arg_required_else_help(true),
@@ -24,7 +24,7 @@ pub fn cli() -> Command {
         .subcommand(
             OgmiosOpts::augment_args(
                 Command::new("query-utxos")
-                    .about("Query UTxOs related to the protocol")
+                    .about("Query UTxOs related to the protocol with the output as LB encoded JSON on STDOUT")
                     .arg(Arg::new("address")
                             .help("Bech32 address to query with")
                             .long("address")
