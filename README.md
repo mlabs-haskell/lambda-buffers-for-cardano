@@ -1,6 +1,6 @@
 # LambdaBuffers Cardano Demo
 
-This repository serves to demonstrate how to use the [LambdaBuffers](https://github.com/mlabs-haskell/lambda-buffers) toolkit for sharing types and their semantics between supported language environments Purescript, Haskell, Plutarch, PlutusTx and Cardano Transaction Library.
+This repository serves to demonstrate how to use the [LambdaBuffers](https://github.com/mlabs-haskell/lambda-buffers) toolkit for sharing types and their semantics between supported language environments Plutarch, PlutusTx,  Purescript (with Cardano Transaction Library), Haskell, Rust, and TypeScript.
 
 However, it can also serve as a scaffold for a typical Cardano dApp project that uses LambdaBuffers.
 
@@ -18,7 +18,8 @@ The [api](api) directory contains the LambdaBuffers .lbf schemas where the Plutu
 
 Note the [api/build.nix](api/build.nix) file which is where the build recipes are specified for the .lbf schemas.
 
-You can simply inspect the packages created by these build recipes with Nix:
+You can simply inspect the packages created by these build recipes with Nix.
+For example, to inspect the Haskell package created by the aforementioned build recipe, you can execute the following.
 
 ```shell
 $ nix build .#lbf-demo-plutus-api-haskell
@@ -56,23 +57,48 @@ These configurations files are used by 'transactions' components that use the sc
 
 ### Transactions
 
-The [transactions](transactions) directory contains the transaction building components implemented various supported transaction building environments. Currently, only the Cardano Transaction Lib use is demonstrated in [transactions/demo-ctl](transactions/demo-ctl).
+The [transactions](transactions) directory contains the transaction building components implemented various supported transaction building environments.
+Currently, we demonstrate transaction building with the following systems:
 
-This is traditionally bundled in `offchain` directories in various project scaffolds, however, I found it useful to further delineate different parts of any given Cardano dApp project in several sub-parts. Along with 'transactions' one would need 'query' which is a component that serves to orchestrate fetching of the context necessary to build transactions.
+- PureScript with Cardano Transaction Lib in [transactions/demo-ctl](transactions/demo-ctl).
 
-There are 3 transactions in this Protocol specified in [transactions/ctl-demo/src/Demo/Transactions.purs](transactions/ctl-demo/src/Demo/Transactions.purs):
+- JavaScript (TypeScript) with Cardano Serialization Lib in [transactions/demo-typescript](transactions/demo-typescript).
+
+- Rust with [tx-village](https://github.com/mlabs-haskell/tx-village) in [transactions/demo-rust](transactions/demo-rust).
+
+- Haskell using Plutus Ledger API types to build data structures suitable for tx-village in [transactions/demo-haskell](transactions/demo-haskell) which uses a Rust CLI to tx-village in [transactions/demo-tx-village](transactions/demo-tx-village).
+
+The transaction building is traditionally bundled in `offchain` directories of various project scaffolds, however, I found it useful to further delineate different parts of any given Cardano dApp project in several sub-parts. Along with 'transactions' one would need 'query' which is a component that serves to orchestrate fetching of the context necessary to build transactions. However, owing to the simplicity of this Protocol, the query component is simply included within the transaction building projects.
+
+There are 3 transactions in this Protocol as follows.
 
 1. `create-value-tx` that stores an [EqDatum](api/Demo/Plutus.lbf) at the Eq validator,
 2. `inputs-is-equal-tx` that spends a UTxO at the Eq validator and checks whether the [EqDatum](api/Demo/Plutus.lbf) spent is the same as the one provided in the redeemer,
 3. `inputs-is-not-equal-tx` that spends a UTxO at the Eq validator and checks whether the [EqDatum](api/Demo/Plutus.lbf) spent is different as the one provided in the redeemer.
 
-The testsuite spawns a new Cardano network and supporting services (uses Plutip, Ogmios and Kupo), builds the Protocol transactions in proper order and eventually signs and submits them.
+Each of the projects has a testsuite which spawns a new Cardano network (using Plutip) and supporting services (Ogmios, and Kupo for PureScript with CTL), builds the Protocol transactions in proper order and eventually signs and submits them.
 
-As is the case throughout this monorepo, the build.nix file contains the build specification parts of which can be inspected by simply using Nix:
+The testsuite tries the same protocol flow with both configurations coming from Plutarch and PlutusTx scripts where the testsuite executes the following:
+
+1. Build and submit a `create-value-tx` transaction to store a EqDatum at an Eq validator.
+
+2. Build and submit a `inputs-is-equal-tx` transaction to check the EqDatum is the same as the one provided in the redeemer
+
+3. Build and submit another `create-value-tx` transaction to store a EqDatum at an Eq validator.
+
+4. Build and submit a `inputs-is-not-equal-tx` transaction to check the EqDatum is not the same as the one provided in the redeemer
+
+As is the case throughout this monorepo, the build.nix file contains the build specification parts of which can be inspected by simply using Nix.
+
+#### PureScript
+
+The transactions in this Protocol are implemented in [transactions/demo-ctl/src/Demo/Transactions.purs](transactions/demo-ctl/src/Demo/Transactions.purs).
+
+The testsuite can be executed with the following commands.
 
 ```shell
 # Run the CTL check
-$ nix -L --show-trace build .#checks.x86_64-linux.purescript:demo-ctl:check-nodejs
+$ nix build .#checks.x86_64-linux.purescript:demo-ctl:check-nodejs -L
 demo-ctl-check> CTL Demo tests » Plutarch
 demo-ctl-check>   ✓︎ Store an example EqDatum at EqValidator and then check if (not)equal (8.48s)
 demo-ctl-check> CTL Demo tests » PlutusTx
@@ -81,4 +107,44 @@ demo-ctl-check> Summary
 demo-ctl-check> 2/2 tests passed
 ```
 
-The testsuite tries the same protocol flow with both configurations coming from Plutarch and PlutusTx scripts.
+#### Rust
+
+The transactions in this Protocol are implemented in [transactions/demo-rust/src/lib.rs](transactions/demo-rust/src/lib.rs).
+
+The testsuite can be executed with the following commands.
+
+```shell
+# Run the Rust check
+$ nix build .#checks.x86_64-linux.demo-rust-test -L
+...
+```
+
+#### JavaScript (TypeScript)
+
+The transactions in this Protocol are implemented in [transactions/demo-typescript/src/lib/index.ts](transactions/demo-typescript/src/lib/index.ts).
+
+The testsuite can be executed with the following commands.
+
+```shell
+# Run the TypeScript check
+$ nix build .#checks.x86_64-linux.demo-typescript-test -L
+...
+```
+
+#### Haskell and Rust's tx-village library
+
+The Haskell implementation of the transactions for the Protocol differs from the previous projects in the sense that all of the previous projects built and submitted transactions themselves.
+The Haskell project instead only builds an intermediate data structure, a `TxInfo`, which contains sufficient information to build the transactions of the project.
+The `TxInfo` may then be encoded to JSON using LambdaBuffers and is provided to the `demo-tx-village` Rust CLI which builds a transaction from the `TxInfo` and submits the transaction.
+
+The Haskell implementation for building `TxInfo`s of the transactions for the Protocol can be found in [transactions/demo-haskell/src/Process.hs](transactions/demo-haskell/src/Process.hs).
+
+The Rust implementation for building transactions given a `TxInfo` from the Haskell project can be found in [transactions/demo-tx-village/src/build_and_submit.rs](transactions/demo-tx-village/src/build_and_submit.rs).
+
+The testsuite which runs the integration test of piping Haskell's `TxInfo`s to Rust, and building and submitting the transactions to the blockchain can be executed with the following commands.
+
+```shell
+# Run the Rust check
+$ nix build .#checks.x86_64-linux.demo-tx-village-rust-test -L
+...
+```
