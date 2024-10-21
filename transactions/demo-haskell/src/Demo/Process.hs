@@ -124,7 +124,13 @@ process config demoRequest =
 element in the list of 'txInfoOutputs' of a 'TxInInfo'
 
 NOTE(jaredponn) October 18,2024: this is actually not needed -- tx-village will
-automatically put this change output there for us.
+automatically put this change output there for us. During testing, this change
+txout made tx-village complain and not build a tx.
+
+PR feedback suggests that this is doing something wrong though. See the comment by
+bladyjoker:
+
+https://github.com/mlabs-haskell/lambda-buffers-for-cardano/pull/27#discussion_r1808283175
 -}
 mkChangeTxOut :: Request a -> TxOut
 mkChangeTxOut req =
