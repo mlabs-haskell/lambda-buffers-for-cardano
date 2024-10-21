@@ -1,0 +1,37 @@
+-- Demo.Request contains the information from a 'Demo.Request.Request'
+-- which is suitable for tx-village to build a transaction.
+module Demo.Response
+
+import Prelude (Text, Eq, Json)
+import Plutus.V1 (PlutusData)
+import Plutus.V2 (TxInfo)
+
+sum Response res 
+    = Result (Result res)
+    | Error Error
+
+derive Eq (Response res)
+derive Json (Response res)
+
+record Result res =
+    { txInfo : TxInfo
+    , response : res
+    }
+
+derive Eq (Result res)
+derive Json (Result res)
+
+sum Error
+    = Build Text
+    | Validation Text
+    | Internal Text
+
+derive Eq Error
+derive Json Error
+
+-- See issue #197:
+-- https://github.com/mlabs-haskell/lambda-buffers/issues/197
+sum XY = X | Y
+derive Eq XY
+derive PlutusData XY
+derive Json XY
