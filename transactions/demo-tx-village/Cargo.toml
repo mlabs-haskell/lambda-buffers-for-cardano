@@ -1,0 +1,48 @@
+[package]
+name = "demo-tx-village"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
+lbf-demo-config-api = { path = ".extras/lbf-demo-config-api-0.1.0" }
+lbf-demo-plutus-api = { path = ".extras/lbf-demo-plutus-api-0.1.0" }
+tx-bakery = { path = ".extras/tx-bakery-0.1.0", features = ["clap"] }
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-0.1.0", features = [
+  "clap",
+] }
+tx-bakery-plutip = { path = ".extras/tx-bakery-plutip-0.1.0" }
+
+cardano-serialization-lib = "11.5.0"
+plutus-ledger-api = { version = "0.2.1", features = ["lbf", "chrono"] }
+num-bigint = { version = "0.4.4", features = ["serde"] }
+num-integer = "0.1.45"
+linked-hash-map = "0.5.6"
+lbr-prelude = { version = "0.1.1", features = ["derive"] }
+serde_json = { version = "1.0.111", features = ["raw_value"] }
+serde = "1.0.195"
+derive_builder = "0.12.0"
+jsonrpsee-core = "0.21.0"
+jsonrpsee-http-client = "0.21.0"
+tokio-test = "0.4.3"
+tower = { version = "0.4.13", features = ["util"] }
+reqwest = { version = "0.11.23", features = ["json"] }
+uuid = { version = "1.6.1", features = ["v4"] }
+cbor_event = "2.4.0"
+tokio = { version = "1.35.1", features = [
+  "time",
+  "process",
+  "rt",
+  "rt-multi-thread",
+] }
+url = "2.5.2"
+anyhow = "1.0.86"
+clap = { version = "4.5.11", features = ["derive"] }
+
+[dev-dependencies]
+data-encoding = "2.5.0"
+serial_test = "3.0.0"
+tempfile = "3.13.0"
+assert_cmd = { version = "2.0.16" }

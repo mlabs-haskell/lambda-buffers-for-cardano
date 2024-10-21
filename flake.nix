@@ -48,7 +48,9 @@
         ./validation/demo-plutustx/build.nix
         ./transactions/demo-ctl/build.nix
         ./transactions/demo-rust/build.nix
+        ./transactions/demo-haskell/build.nix
         ./transactions/demo-typescript/build.nix
+        ./transactions/demo-tx-village/build.nix
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];
