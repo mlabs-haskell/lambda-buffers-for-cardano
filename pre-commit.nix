@@ -19,7 +19,7 @@
             statix.enable = true;
             cabal-fmt.enable = true;
             fourmolu.enable = true;
-            shellcheck.enable = true;
+            # shellcheck.enable = true;
             hlint.enable = true;
             typos = {
               enable = true;

@@ -1,3 +1,4 @@
+.DS_Store
 dist
 dist-*
 cabal-dev
@@ -27,3 +28,4 @@ cabal.project.local~
 .spago/
 node_modules/
 /result
+.devnet

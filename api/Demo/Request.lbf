@@ -4,7 +4,7 @@ module Demo.Request
 
 import Prelude (Set, Json, Eq, List)
 import Plutus.V1 (Address, POSIXTime)
-import Plutus.V2 (TxInInfo)
+import Plutus.V3 (TxInInfo)
 
 import Demo.Plutus (EqDatum, EqRedeemer)
 

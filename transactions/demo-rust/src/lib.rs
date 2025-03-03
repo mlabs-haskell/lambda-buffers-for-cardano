@@ -2,7 +2,7 @@ use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer};
 use num_bigint::BigInt;
 use plutus_ledger_api::{
     plutus_data::IsPlutusData,
-    v2::{
+    v3::{
         address::{Address, Credential},
         datum::{Datum, OutputDatum},
         redeemer::Redeemer,
@@ -180,7 +180,7 @@ pub mod claim_eq_datum {
         let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
         // Define the strategy to find a suitable collateral
-        let collateral = CollateralStrategy::Automatic { amount: 5_000_000 };
+        let collateral = CollateralStrategy::Automatic { min_amount: 5_000_000, max_utxo_count: 1 };
 
         // Initialise TxBakery by fetching protocol parameters from the ChainQuery
         let tx_bakery = TxBakery::init(chain_query).await?;

@@ -7,9 +7,11 @@ import Data.ByteString.Short (fromShort)
 import Demo.Validation (eqValidator)
 import LambdaBuffers.Demo.Config (Config (Config, config'eqValidator), Script (Script))
 import LambdaBuffers.Runtime.Prelude (toJsonBytes)
-import PlutusLedgerApi.V2 (serialiseCompiledCode)
-import PlutusTx qualified (BuiltinData, CompiledCode, compile)
+import PlutusLedgerApi.Data.V3 (ScriptContext)
+import PlutusLedgerApi.V3 (serialiseCompiledCode)
+import PlutusTx qualified (CompiledCode, compile)
 import PlutusTx.Plugin ()
+import PlutusTx.Prelude (BuiltinUnit)
 
 data CompileMode = COMPILE_PROD | COMPILE_DEBUG deriving stock (Show, Read, Eq)
 
@@ -28,5 +30,5 @@ compile opts = do
             }
   Data.ByteString.writeFile (co'File opts) config
 
-eqValidatorCompiled :: PlutusTx.CompiledCode (PlutusTx.BuiltinData -> PlutusTx.BuiltinData -> PlutusTx.BuiltinData -> ())
+eqValidatorCompiled :: PlutusTx.CompiledCode (ScriptContext -> BuiltinUnit)
 eqValidatorCompiled = $$(PlutusTx.compile [||eqValidator||])
