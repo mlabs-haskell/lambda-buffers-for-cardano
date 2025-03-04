@@ -52,6 +52,7 @@
           inputs'.ogmios.packages."ogmios:exe:ogmios"
           pkgs.cargo-nextest
           config.packages.demo-haskell-cli
+          self'.packages.demo-tx-village-rust
         ];
 
         extraSources = [

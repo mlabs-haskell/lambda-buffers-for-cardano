@@ -341,7 +341,7 @@ pub fn cli_claim_response(
 
 /// Calls the demo-tx-village CLI to return the eq_validator address
 pub fn demo_tx_village_eq_validator_address(config_path: &str, network: &Network) -> Address {
-    let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
+    let mut cmd = Command::new("demo-tx-village");
 
     let assert = cmd
         .env("DEMO_CONFIG", config_path)
@@ -363,7 +363,7 @@ pub fn demo_tx_village_query_utxos(
     addr: Address,
     option_eq_datum: Option<EqDatum>,
 ) -> std::vec::Vec<TxInInfo> {
-    let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
+    let mut cmd = Command::new("demo-tx-village");
 
     let mut temp_file = tempfile::NamedTempFile::new().unwrap();
 
@@ -403,7 +403,7 @@ pub fn demo_tx_village_build_and_submit(
     signing_key_file: &str,
     tx_info: TransactionInfo,
 ) -> TransactionHash {
-    let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
+    let mut cmd = Command::new("demo-tx-village");
 
     let assert = cmd
         .env("DEMO_CONFIG", config_path)
