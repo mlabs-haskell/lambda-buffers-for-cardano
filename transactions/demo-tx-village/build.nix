@@ -19,7 +19,20 @@
     }:
 
     let
+      dataDir = "data";
+      data = [
+        {
+          name = "demo-plutarch-config.json";
+          path = config.packages.demo-plutarch-config;
+        }
+        {
+          name = "demo-plutustx-config.json";
+          path = config.packages.demo-plutustx-config;
+        }
+
+      ];
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake {
+        inherit data;
         src = ./.;
         crateName = "demo-tx-village";
         exportTests = true;
@@ -53,18 +66,6 @@
           config.packages.lbf-demo-plutus-api-rust
         ];
 
-        data = [
-          {
-            name = "demo-plutarch-config.json";
-            path = config.packages.demo-plutarch-config;
-          }
-          {
-            name = "demo-plutustx-config.json";
-            path = config.packages.demo-plutustx-config;
-          }
-
-        ];
-
         devShellTools = [
           self'.packages.pc-demo-tx-village-tests
         ];
@@ -85,27 +86,32 @@
 
       inherit (rustFlake) packages devShells;
 
-      checks = {
-        "demo-tx-village-checks" = pkgs.stdenv.mkDerivation {
-          name = "demo-tx-village-checks";
-          phases = [
-            "unpackPhase"
-            "checkPhase"
-            "buildPhase"
-          ];
-          unpackPhase = ''
-            echo "Linking data"
-            ln -s ${./wallets} ./wallets
-          '';
-          checkPhase = ''
-            ${self'.packages.pc-demo-tx-village-tests}/bin/pc-demo-tx-village-tests -t=false
-          '';
-          buildPhase = ''
-            mkdir $out
-          '';
-          doCheck = true;
+      checks =
+        let
+          data-drv = pkgs.linkFarm "data" data;
+        in
+        {
+          "demo-tx-village-checks" = pkgs.stdenv.mkDerivation {
+            name = "demo-tx-village-checks";
+            phases = [
+              "unpackPhase"
+              "checkPhase"
+              "buildPhase"
+            ];
+            unpackPhase = ''
+              echo "Linking data"
+              ln -s ${./wallets} ./wallets
+              ln -s ${data-drv} ./${dataDir}
+            '';
+            checkPhase = ''
+              ${self'.packages.pc-demo-tx-village-tests}/bin/pc-demo-tx-village-tests -t=false
+            '';
+            buildPhase = ''
+              mkdir $out
+            '';
+            doCheck = true;
+          };
         };
-      };
 
       cardano-devnet.initialFunds = {
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
