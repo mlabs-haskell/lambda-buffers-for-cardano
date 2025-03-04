@@ -128,7 +128,7 @@ pub mod claim_eq_datum {
             .iter()
             .find(|(_, tx_out)| {
                 if let OutputDatum::InlineDatum(Datum(inline_datum)) = &tx_out.datum {
-                    EqDatum::from_plutus_data(&inline_datum).unwrap() == *eq_datum
+                    EqDatum::from_plutus_data(inline_datum).unwrap() == *eq_datum
                 } else {
                     false
                 }
@@ -180,7 +180,10 @@ pub mod claim_eq_datum {
         let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
         // Define the strategy to find a suitable collateral
-        let collateral = CollateralStrategy::Automatic { min_amount: 5_000_000, max_utxo_count: 1 };
+        let collateral = CollateralStrategy::Automatic {
+            min_amount: 5_000_000,
+            max_utxo_count: 1,
+        };
 
         // Initialise TxBakery by fetching protocol parameters from the ChainQuery
         let tx_bakery = TxBakery::init(chain_query).await?;

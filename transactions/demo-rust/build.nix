@@ -65,7 +65,7 @@
             echo "LambdaBuffers for Rust testsuite"
             echo ""
             echo "Run pc-demo-rust-tests to execute the testsuite."
-            echo "or pc-demo-rust-tests up ogmios cardano_devnet -t=true to spin up an environment"
+            echo "or pc-demo-rust-tests up ogmios cardano_devnet -t to spin up an environment"
             echo ""
           '';
       };
@@ -87,7 +87,7 @@
             ln -s ${./wallets} ./wallets
           '';
           checkPhase = ''
-            ${self'.packages.pc-tx-bakery-tests}/bin/pc-demo-rust-tests
+            ${self'.packages.pc-demo-rust-tests}/bin/pc-demo-rust-tests -t=false
           '';
           buildPhase = ''
             mkdir $out
@@ -101,7 +101,6 @@
       };
 
       process-compose.pc-demo-rust-tests = {
-        cli.environment.PC_DISABLE_TUI = true;
         settings.processes = {
           tests = {
             command = "

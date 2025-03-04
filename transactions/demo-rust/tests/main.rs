@@ -117,7 +117,7 @@ mod tests {
             ogmios,
             eq_validator.clone(),
             &EqRedeemer::IsEqual(example_eq_datum.clone()),
-            &example_eq_datum,
+            example_eq_datum,
         )
         .await
         .unwrap();
@@ -151,7 +151,7 @@ mod tests {
             ogmios,
             eq_validator.clone(),
             &EqRedeemer::IsNotEqual(example_eq_datum_a.clone()),
-            &example_eq_datum_b,
+            example_eq_datum_b,
         )
         .await
         .unwrap();

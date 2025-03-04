@@ -13,7 +13,7 @@ import LambdaBuffers.Demo.Config (Config (..), Script (..))
 import LambdaBuffers.Demo.Request (ClaimRequest (..), DemoRequest (..), LockRequest (..), Request (..))
 import LambdaBuffers.Demo.Response (Error (..), Response (..), Result (..))
 import PlutusLedgerApi.V1.Bytes qualified as V1.Bytes
-import PlutusLedgerApi.V2 (Address (..), Credential (..), Datum (..), Extended (..), Interval (..), LowerBound (..), OutputDatum (..), Redeemer (..), ScriptHash (..), ScriptPurpose (..), TxId (..), TxInInfo (..), TxInfo (..), TxOut (..), UpperBound (..))
+import PlutusLedgerApi.V3 (Address (..), Credential (..), Datum (..), Extended (..), Interval (..), LowerBound (..), OutputDatum (..), Redeemer (..), ScriptHash (..), ScriptPurpose (..), TxId (..), TxInInfo (..), TxInfo (..), TxOut (..), UpperBound (..))
 import PlutusTx.AssocMap qualified as AssocMap
 import PlutusTx.IsData.Class qualified as IsData.Class
 
@@ -23,7 +23,7 @@ process config demoRequest =
   case Cardano.Api.deserialiseFromRawBytes (Cardano.Api.proxyToAsType Proxy) $ Coerce.coerce $ config'eqValidator config of
     Left err -> Response'Error $ Error'Internal $ Text.pack $ show err
     Right eqValidatorDeserialised ->
-      let eqValidatorScript = PlutusScript PlutusScriptV2 eqValidatorDeserialised
+      let eqValidatorScript = PlutusScript PlutusScriptV3 eqValidatorDeserialised
           eqValidatorScriptHash = Cardano.Api.hashScript eqValidatorScript
           eqValidatorAddress =
             Address
@@ -38,6 +38,28 @@ process config demoRequest =
                         $
                           Cardano.Api.serialiseToRawBytes eqValidatorScriptHash
               , addressStakingCredential = Nothing
+              }
+          emptyTxInfo =
+            TxInfo
+              { txInfoInputs = mempty
+              , txInfoOutputs = mempty
+              , txInfoFee = 0
+              , txInfoMint = mempty
+              , txInfoTxCerts = []
+              , txInfoWdrl = AssocMap.empty
+              , txInfoValidRange =
+                  Interval
+                    (LowerBound NegInf False)
+                    (UpperBound PosInf False)
+              , txInfoSignatories = mempty
+              , txInfoData = AssocMap.empty
+              , txInfoId = TxId mempty
+              , txInfoReferenceInputs = mempty
+              , txInfoRedeemers = AssocMap.empty
+              , txInfoVotes = AssocMap.empty
+              , txInfoProposalProcedures = mempty
+              , txInfoCurrentTreasuryAmount = Nothing
+              , txInfoTreasuryDonation = Nothing
               }
        in case demoRequest of
             DemoRequest'Lock req ->
@@ -58,23 +80,10 @@ process config demoRequest =
                in Response'Result $
                     Result
                       { result'txInfo =
-                          TxInfo
+                          emptyTxInfo
                             { txInfoInputs = request'feeInputs req
                             , txInfoOutputs =
                                 [eqValidatorTxOut]
-                            , txInfoFee = mempty
-                            , txInfoMint = mempty
-                            , txInfoDCert = []
-                            , txInfoWdrl = AssocMap.empty
-                            , txInfoValidRange =
-                                Interval
-                                  (LowerBound NegInf False)
-                                  (UpperBound PosInf False)
-                            , txInfoSignatories = mempty
-                            , txInfoData = AssocMap.empty
-                            , txInfoId = TxId mempty
-                            , txInfoReferenceInputs = mempty
-                            , txInfoRedeemers = AssocMap.empty
                             }
                       , result'response = ()
                       }
@@ -86,25 +95,11 @@ process config demoRequest =
                       Response'Result $
                         Result
                           { result'txInfo =
-                              TxInfo
+                              emptyTxInfo
                                 { txInfoInputs =
                                     lockedUtxo : request'feeInputs req
-                                , txInfoOutputs =
-                                    []
-                                , txInfoFee = mempty
-                                , txInfoMint = mempty
-                                , txInfoDCert = []
-                                , txInfoWdrl = AssocMap.empty
-                                , txInfoValidRange =
-                                    Interval
-                                      (LowerBound NegInf False)
-                                      (UpperBound PosInf False)
-                                , txInfoSignatories = mempty
-                                , txInfoData = AssocMap.empty
-                                , txInfoId = TxId mempty
-                                , txInfoReferenceInputs = mempty
                                 , txInfoRedeemers =
-                                    AssocMap.fromListSafe
+                                    AssocMap.safeFromList
                                       [
                                         ( Spending $ txInInfoOutRef lockedUtxo
                                         , Redeemer
