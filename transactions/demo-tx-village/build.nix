@@ -105,11 +105,16 @@
               ln -s ${data-drv} ./${dataDir}
             '';
             checkPhase = ''
-              ${self'.packages.pc-demo-tx-village-tests}/bin/pc-demo-tx-village-tests -t=false
+              pc-demo-tx-village-tests -t=false
             '';
             buildPhase = ''
               mkdir $out
             '';
+            buildInputs = [
+              self'.packages.pc-demo-tx-village-tests
+              self'.packages.demo-tx-village-rust
+              config.packages.demo-haskell-cli
+            ];
             doCheck = true;
           };
         };
