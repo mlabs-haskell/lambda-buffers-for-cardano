@@ -35,6 +35,34 @@ export interface RtsConfig {
 }
 
 /**
+ * The runtime system configuration of the application i.e., where the system
+ * looks for
+ *
+ *  - the ogmios connection
+ *
+ *  - Secret key + its address
+ */
+export interface RawRtsConfig {
+  /**
+   * The ogmios configuration
+   */
+  ogmios: {
+    host: string;
+    port: string;
+  };
+
+  /**
+   * `signingKey` used for paying fees
+   */
+  signingKeyCborHex: string;
+
+  /**
+   * `signingKeyAddress` address used to pay fees and collect change
+   */
+  signingKeyAddressBech32?: string;
+}
+
+/**
  * {@link readRtsConfig} reads the runtime configuration from the provided
  * file.
  *
@@ -52,33 +80,36 @@ export interface RtsConfig {
  * Note: `signingKeyAddressBech32` is optional.
  */
 export async function readRtsConfig(path: string): Promise<RtsConfig> {
+  const contents = await fs.readFile(path, { encoding: "utf8" });
+  const json = JSON.parse(contents);
+  return parseRtsConfig(json);
+}
+
+export function parseRtsConfig(json: RawRtsConfig): RtsConfig {
   const rtsConfig: RtsConfig = {
     ogmios: { host: undefined, port: undefined },
     signingKey: undefined,
     signingKeyAddress: undefined,
   } as unknown as RtsConfig;
 
-  const contents = await fs.readFile(path, { encoding: "utf8" });
-  const json = JSON.parse(contents);
-
   if (json?.ogmios?.host === undefined) {
-    throw new Error(`demo: ${path} missing ogmios.host`);
+    throw new Error(`demo: rts config missing ogmios.host`);
   }
   rtsConfig.ogmios.host = json.ogmios.host;
 
   if (json?.ogmios?.port === undefined) {
-    throw new Error(`demo: ${path} missing ogmios.port`);
+    throw new Error(`demo: rts config missing ogmios.port`);
   }
   rtsConfig.ogmios.port = parseInt(json.ogmios.port, 10);
 
   if (json.signingKeyCborHex === undefined) {
-    throw new Error(`demo: ${path} missing signingKeyCborHex`);
+    throw new Error(`demo: rts config missing signingKeyCborHex`);
   }
   rtsConfig.signingKey = cborHexPrivateKey(json.signingKeyCborHex);
 
   if (json.signingKeyAddressBech32 === undefined) {
     console.error(
-      `demo: ${path} missing signingKeyAddressBech32 so computing an enterprise address from the provided signing key for the mainnet`,
+      `demo: rts config missing signingKeyAddressBech32 so computing an enterprise address from the provided signing key for the mainnet`,
     );
     const sk = rtsConfig.signingKey;
     const vk = sk.to_public();

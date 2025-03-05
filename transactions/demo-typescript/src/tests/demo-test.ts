@@ -8,7 +8,7 @@ import * as PlaPd from "plutus-ledger-api/PlutusData.js";
 import * as PreludeJson from "prelude/Json.js";
 import { EqDatum } from "lbf-demo-plutus-api/LambdaBuffers/Demo/Plutus.mjs";
 import { cslPlutusDataToPlaPlutusData } from "../lib/utils.js";
-import { readRtsConfig } from "../lib/rtsconfig.js";
+import { parseRtsConfig } from "../lib/rtsconfig.js";
 import { Demo } from "../lib/index.js";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import * as fs from "node:fs/promises";
@@ -28,11 +28,16 @@ import { Buffer } from "node:buffer";
  *  - In either case, we run all the tests afterwards.
  */
 describe(`Typescript demo tests`, async () => {
-  /*
-   * Start the runtime services by executing `demo-rts` (or use the existence
-   * runtime services if `TEST_RTS_CONFIG` is set)
-   */
-  const rtsConfig = await readRtsConfig("./demo-rtsconfig.json");
+  const rtsConfig = parseRtsConfig({
+    ogmios: {
+      host: "127.0.0.1",
+      port: "1337",
+    },
+    signingKeyCborHex:
+      "5820d0a6e3e3fe44bf64a98e372d31403f46ba76d28462dc55b76a2fa7d0d8f2c0a5",
+    signingKeyAddressBech32:
+      "addr_test1vzj4slwqz4qaftgh67jyzmh7uf6dsvljljy5ammeja4r6ps43uflk",
+  });
 
   /*
    * Plutarch tests
