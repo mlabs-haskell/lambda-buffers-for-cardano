@@ -1,0 +1,8 @@
+{
+  "ogmios": {
+    "host": "127.0.0.1",
+    "port": "1337"
+  },
+  "signingKeyCborHex": "5820d0a6e3e3fe44bf64a98e372d31403f46ba76d28462dc55b76a2fa7d0d8f2c0a5",
+  "signingKeyAddressBech32": "addr_test1vzj4slwqz4qaftgh67jyzmh7uf6dsvljljy5ammeja4r6ps43uflk"
+}

@@ -80,7 +80,7 @@ export class TxBuilder {
    * Wrapper around {@link csl.TransactionBuilder.add_output }
    */
   addOutput(txOut: csl.TransactionOutput): TxBuilder {
-    return this.then((env) => ((env.txBuilder.add_output(txOut)), env));
+    return this.then((env) => (env.txBuilder.add_output(txOut), env));
   }
 
   /**
@@ -104,10 +104,9 @@ export class TxBuilder {
     strategy: csl.CoinSelectionStrategyCIP2,
   ): TxBuilder {
     return this.then(
-      (
-        env,
-      ) => ((env.txBuilder.add_inputs_from(inputs, strategy), env.txBuilder),
-        env),
+      (env) => (
+        (env.txBuilder.add_inputs_from(inputs, strategy), env.txBuilder), env
+      ),
     );
   }
 
@@ -139,9 +138,7 @@ export class TxBuilder {
    * @see {@link https://github.com/Emurgo/cardano-serialization-lib/blob/11.5.0/rust/src/tx_builder.rs#L1336-L1340}
    */
   addChangeIfNeeded(addr: csl.Address) {
-    return this.then(
-      (env) => ((env.txBuilder.add_change_if_needed(addr)), env),
-    );
+    return this.then((env) => (env.txBuilder.add_change_if_needed(addr), env));
   }
 
   /**
@@ -149,7 +146,7 @@ export class TxBuilder {
    */
   calcScriptDataHash(costmdl: csl.Costmdls) {
     return this.then(
-      (env) => ((env.txBuilder.calc_script_data_hash(costmdl)), env),
+      (env) => (env.txBuilder.calc_script_data_hash(costmdl), env),
     );
   }
 
@@ -211,9 +208,7 @@ export class TxBuilder {
    * @see {@link  https://github.com/Emurgo/cardano-serialization-lib/blob/11.5.0/rust/src/tx_builder.rs#L691 }
    */
   setCollateral(collateral: csl.TxInputsBuilder): TxBuilder {
-    return this.then(
-      (env) => ((env.txBuilder.set_collateral(collateral)), env),
-    );
+    return this.then((env) => (env.txBuilder.set_collateral(collateral), env));
   }
 
   /**
@@ -243,10 +238,11 @@ export function addVkeyWitness(
   tx: csl.Transaction,
   sk: csl.PrivateKey,
 ): csl.Transaction {
-  const vkeyWitness = csl.make_vkey_witness(
-    csl.hash_transaction(tx.body()),
-    sk,
+  const fixed_tx = csl.FixedTransaction.new_from_body_bytes(
+    tx.body().to_bytes(),
   );
+  const tx_hash = fixed_tx.transaction_hash();
+  const vkeyWitness = csl.make_vkey_witness(tx_hash, sk);
   const witnesses = tx.witness_set();
   const vkeys =
     ((vkeys) => vkeys === undefined ? csl.Vkeywitnesses.new() : vkeys)(
@@ -254,7 +250,7 @@ export function addVkeyWitness(
     );
   vkeys.add(vkeyWitness);
   witnesses.set_vkeys(vkeys);
-  return csl.Transaction.new(tx.body(), witnesses, tx.auxiliary_data());
+  return csl.Transaction.new(fixed_tx.body(), witnesses, tx.auxiliary_data());
 }
 
 function txBuilderConfigToCslDataCost(conf: TxBuilderConfig): csl.DataCost {

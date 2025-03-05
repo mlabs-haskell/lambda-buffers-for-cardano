@@ -51,9 +51,10 @@ export class Ogmios implements Query, Submit {
   /**
    * Creates a new connection to ogmios running on the provided host and port
    */
-  static async new(
-    connection: { host: string; port: number },
-  ): Promise<Ogmios> {
+  static async new(connection: {
+    host: string;
+    port: number;
+  }): Promise<Ogmios> {
     const finalConnection = await Promise.resolve(connection);
     return new Ogmios(finalConnection);
   }
@@ -91,9 +92,9 @@ export class Ogmios implements Query, Submit {
     const context = await this.createInteractionContext();
     const client = await createLedgerStateQueryClient(context);
     try {
-      const utxos = await client.utxo({ addresses: [addr.to_bech32()] }).then(
-        ogmiosUtxoToCslUtxo,
-      );
+      const utxos = await client
+        .utxo({ addresses: [addr.to_bech32()] })
+        .then(ogmiosUtxoToCslUtxo);
       return utxos;
     } finally {
       client.shutdown();
@@ -108,14 +109,16 @@ export class Ogmios implements Query, Submit {
     const context = await this.createInteractionContext();
     const client = await createLedgerStateQueryClient(context);
     try {
-      const utxos = await client.utxo({
-        outputReferences: [{
-          index: transactionInputJson.index,
-          transaction: { id: transactionInputJson.transaction_id },
-        }],
-      }).then(
-        ogmiosUtxoToCslUtxo,
-      );
+      const utxos = await client
+        .utxo({
+          outputReferences: [
+            {
+              index: transactionInputJson.index,
+              transaction: { id: transactionInputJson.transaction_id },
+            },
+          ],
+        })
+        .then(ogmiosUtxoToCslUtxo);
       if (utxos.len() === 0) {
         return undefined;
       } else {
@@ -149,27 +152,29 @@ export class Ogmios implements Query, Submit {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        const poll = setInterval(
-          () => {
-            client.utxo({
-              outputReferences: [{
-                // Use the fact that transactions always
-                // should have at least 1 transaction output,
-                // and (it seems!) transaction outputs start
-                // at 0.
-                index: 0,
-                transaction: { id: transactionHash.to_hex() },
-              }],
-            }).then((utxos) => {
+        const poll = setInterval(() => {
+          client
+            .utxo({
+              outputReferences: [
+                {
+                  // Use the fact that transactions always
+                  // should have at least 1 transaction output,
+                  // and (it seems!) transaction outputs start
+                  // at 0.
+                  index: 0,
+                  transaction: { id: transactionHash.to_hex() },
+                },
+              ],
+            })
+            .then((utxos) => {
               if (utxos.length !== 0 || !(count < maxCount)) {
                 clearInterval(poll);
                 resolve();
               }
               ++count;
-            }).catch(reject);
-          },
-          pollDelayMs,
-        );
+            })
+            .catch(reject);
+        }, pollDelayMs);
       });
     } finally {
       client.shutdown();
@@ -180,7 +185,7 @@ export class Ogmios implements Query, Submit {
    */
   async evaluateTx(
     transaction: csl.Transaction,
-    excessBudgetFactor = 1.10,
+    excessBudgetFactor = 1.1,
   ): Promise<TxExUnits> {
     const context = await this.createInteractionContext();
     const client = await createTransactionSubmissionClient(context);
@@ -231,6 +236,13 @@ export class Ogmios implements Query, Submit {
           }
 
           costmdls.insert(csl.Language.new_plutus_v2(), costModel);
+        } else if (key === "plutus:v3") {
+          const costModel = csl.CostModel.new();
+          for (let i = 0; i < value.length; ++i) {
+            costModel.set(i, csl.Int.from_str(value[i]!.toString()));
+          }
+
+          costmdls.insert(csl.Language.new_plutus_v3(), costModel);
         } else {
           throw new Error(
             `Unsupported Plutus version when getting cost model ${key}`,
@@ -268,7 +280,7 @@ export class Ogmios implements Query, Submit {
 function ogmiosEvaluateTransactionToCslExUnits(
   tx: csl.Transaction,
   resp: ogmios.EvaluateTransactionSuccess["result"],
-  excessBudgetFactor = 1.10,
+  excessBudgetFactor = 1.1,
 ): TxExUnits {
   const inputs = tx.body().inputs();
 
@@ -337,9 +349,7 @@ function ogmiosProtocolParametersToTxBuilderConfig(
   const maxValueSize = params.maxValueSize.bytes;
 
   if (params.maxTransactionSize === undefined) {
-    throw new Error(
-      `Ogmios protocol parameters is missing maxTransactionSize`,
-    );
+    throw new Error(`Ogmios protocol parameters is missing maxTransactionSize`);
   }
 
   const maxTransactionSize = params.maxTransactionSize.bytes;
@@ -366,9 +376,7 @@ function ogmiosProtocolParametersToTxBuilderConfig(
     );
   }
 
-  const memPrice = rationalToUnitInterval(
-    params.scriptExecutionPrices.memory,
-  );
+  const memPrice = rationalToUnitInterval(params.scriptExecutionPrices.memory);
   const cpuPrice = rationalToUnitInterval(params.scriptExecutionPrices.cpu);
   const exUnitPrices = csl.ExUnitPrices.new(memPrice, cpuPrice);
 

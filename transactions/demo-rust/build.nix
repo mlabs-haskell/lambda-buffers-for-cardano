@@ -108,9 +108,7 @@
       process-compose.pc-demo-rust-tests = {
         settings.processes = {
           tests = {
-            command = "
-                      ${self'.packages.demo-rust-test}/bin/run_tests.sh
-                    ";
+            command = "${self'.packages.demo-rust-test}/bin/run_tests.sh";
             depends_on = {
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";

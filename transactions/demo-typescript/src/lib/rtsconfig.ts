@@ -83,10 +83,10 @@ export async function readRtsConfig(path: string): Promise<RtsConfig> {
     const sk = rtsConfig.signingKey;
     const vk = sk.to_public();
     const vkHash = vk.hash();
-    const stakeCredential = csl.StakeCredential.from_keyhash(vkHash);
+    const credential = csl.Credential.from_keyhash(vkHash);
     const enterpriseAddress = csl.EnterpriseAddress.new(
-      csl.NetworkId.mainnet().kind(),
-      stakeCredential,
+      csl.NetworkId.testnet().kind(),
+      credential,
     );
     console.error(
       `demo: computed \`SIGNING_KEY_ADDRESS_BECH32\` is \`${enterpriseAddress.to_address().to_bech32()}\``,
