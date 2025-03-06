@@ -1,10 +1,22 @@
 # Repo wide settings
-{ lib, flake-parts-lib, inputs, ... }: {
+{
+  lib,
+  flake-parts-lib,
+  inputs,
+  ...
+}:
+{
 
   options = {
 
-    perSystem = flake-parts-lib.mkPerSystemOption
-      ({ pkgs, system, config, ... }: {
+    perSystem = flake-parts-lib.mkPerSystemOption (
+      {
+        pkgs,
+        system,
+        config,
+        ...
+      }:
+      {
         options.settings = {
 
           shell = {
@@ -36,7 +48,6 @@
 
         };
 
-
         config = {
 
           settings = {
@@ -53,7 +64,7 @@
 
                 pkgs.nil
                 inputs.pre-commit-hooks.outputs.packages.${system}.deadnix
-                inputs.pre-commit-hooks.outputs.packages.${system}.nixpkgs-fmt
+                inputs.pre-commit-hooks.outputs.packages.${system}.nixfmt-rfc-style
 
                 inputs.pre-commit-hooks.outputs.packages.${system}.shellcheck
 
@@ -73,7 +84,8 @@
           };
         };
 
-      });
+      }
+    );
 
   };
 

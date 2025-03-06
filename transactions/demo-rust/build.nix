@@ -1,12 +1,13 @@
 { inputs, ... }:
 {
   perSystem =
-    { config
-    , inputs'
-    , system
-    , pkgs
-    , self'
-    , ...
+    {
+      config,
+      inputs',
+      system,
+      pkgs,
+      self',
+      ...
     }:
 
     let

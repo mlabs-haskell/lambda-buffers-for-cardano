@@ -1,6 +1,14 @@
 { inputs, ... }:
 {
-  perSystem = { pkgs, pkgsForCtl, config, system, inputs', ... }:
+  perSystem =
+    {
+      pkgs,
+      pkgsForCtl,
+      config,
+      system,
+      inputs',
+      ...
+    }:
 
     let
       pursFlake = inputs.flake-lang.lib."${system}".purescriptFlake {
@@ -38,15 +46,13 @@
         shell = {
           withRuntime = false;
           packageLockOnly = true;
-          packages =
-            [
-              pkgs.nodejs-18_x
-              pkgs.bashInteractive
-              pkgs.fd
-              pkgsForCtl.plutip-server
-              pkgsForCtl.ogmios
-              pkgsForCtl.kupo
-            ] ++ config.settings.shell.tools;
+          packages = [
+            pkgs.nodejs-18_x
+            pkgs.bashInteractive
+            pkgs.fd
+            pkgsForCtl.ogmios
+            pkgsForCtl.kupo
+          ] ++ config.settings.shell.tools;
           shellHook = config.settings.shell.hook;
         };
 

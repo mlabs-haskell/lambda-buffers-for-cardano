@@ -1,11 +1,12 @@
 { inputs, ... }:
 {
   perSystem =
-    { config
-    , system
-    , pkgs
-    , inputs'
-    , ...
+    {
+      config,
+      system,
+      pkgs,
+      inputs',
+      ...
     }:
     let
       hsFlake = inputs.flake-lang.lib."${system}".haskellPlutusFlake {

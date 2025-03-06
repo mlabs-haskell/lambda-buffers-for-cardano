@@ -3,7 +3,8 @@
 # suitable for tx-village to bake and submit such a transaction
 { inputs, ... }:
 {
-  perSystem = { config, system, ... }:
+  perSystem =
+    { config, system, ... }:
     let
       hsFlake = inputs.flake-lang.lib.${system}.haskellPlutusFlake {
         src = ./.;

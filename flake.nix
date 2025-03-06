@@ -5,11 +5,10 @@
     nixpkgs.follows = "lbf/nixpkgs";
 
     # LambdaBuffers for sharing types
-    lbf.url = "github:mlabs-haskell/lambda-buffers";
+    lbf.url = "github:mlabs-haskell/lambda-buffers/szg251/expand-c13-report";
 
     # flake-lang.nix for monorepo setup
-    # flake-lang.follows = "lbf/flake-lang";
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
+    flake-lang.follows = "lbf/flake-lang";
 
     # flake-parts for Flake modules
     flake-parts.follows = "lbf/flake-parts";
