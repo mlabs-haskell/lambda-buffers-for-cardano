@@ -102,14 +102,13 @@
       cardano-devnet.initialFunds = {
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
       };
-      cardano-devnet.devnetDirectory = "/tmp/devnet";
 
       process-compose.pc-demo-ctl-tests =
         let
           addr = "addr_test1vzj4slwqz4qaftgh67jyzmh7uf6dsvljljy5ammeja4r6ps43uflk";
           cardano-cli = "${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli";
           jq = "${pkgs.jq}/bin/jq";
-          devnetDir = "/tmp/devnet";
+          devnetDir = ".devnet";
         in
         {
           settings.processes = {
@@ -135,8 +134,8 @@
               readiness_probe = {
                 exec.command = ''
                   ${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli query tip \
-                                --socket-path ${devnetDir}/node.socket \
-                                --testnet-magic 42'';
+                    --socket-path ${devnetDir}/node.socket \
+                    --testnet-magic 42'';
                 initial_delay_seconds = 1;
                 period_seconds = 1;
               };
@@ -168,8 +167,8 @@
             ogmios = {
               command = ''
                 ${pkgsForCtl.ogmios}/bin/ogmios \
-                            --node-socket ${devnetDir}/node.socket \
-                            --node-config ${devnetDir}/config.json
+                  --node-socket ${devnetDir}/node.socket \
+                  --node-config ${devnetDir}/config.json
               '';
               readiness_probe = {
                 http_get = {
@@ -186,11 +185,11 @@
             kupo = {
               command = ''
                 ${pkgsForCtl.kupo}/bin/kupo \
-                            --node-socket ${devnetDir}/node.socket \
-                            --node-config ${devnetDir}/config.json \
-                            --in-memory \
-                            --match '*' \
-                            --since origin
+                  --node-socket ${devnetDir}/node.socket \
+                  --node-config ${devnetDir}/config.json \
+                  --in-memory \
+                  --match '*' \
+                  --since origin
               '';
               readiness_probe = {
                 http_get = {
