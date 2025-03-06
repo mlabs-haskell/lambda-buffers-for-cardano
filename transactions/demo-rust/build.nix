@@ -39,10 +39,6 @@
         buildInputs = [
           pkgs.openssl.dev
         ];
-        testTools = [
-          inputs'.ogmios.packages."ogmios:exe:ogmios"
-          pkgs.cargo-nextest
-        ];
 
         extraSources = [
           # LB base schema and runtime libs

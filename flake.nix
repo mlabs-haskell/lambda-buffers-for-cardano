@@ -32,9 +32,9 @@
       inputs.lbf.follows = "lbf";
     };
 
-    ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.9.0";
+    ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
 
-    cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=szg251/node-10";
+    cardano-devnet-flake.url = "github:mlabs-haskell/cardano-devnet-flake";
     cardano-node.follows = "cardano-devnet-flake/cardano-node";
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
   };

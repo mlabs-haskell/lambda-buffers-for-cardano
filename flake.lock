@@ -4070,16 +4070,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1740493924,
-        "narHash": "sha256-DY45aCHxvjlpH7tqDtiK9GrHJ2MJkQF92h++ushgZGs=",
-        "owner": "szg251",
+        "lastModified": 1741276351,
+        "narHash": "sha256-ZqBJPEYCynuXHjts2RqQGpLWfgf7/eKPxIbpqG72+zI=",
+        "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
-        "rev": "fd48e995d112220bfe84a7011a7b3b8568a69afd",
+        "rev": "8203283093918529ce72291e3be4ce6c70211fca",
         "type": "github"
       },
       "original": {
-        "owner": "szg251",
-        "ref": "szg251/node-10",
+        "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
         "type": "github"
       }
@@ -9405,11 +9404,11 @@
         "nixpkgs-lib": "nixpkgs-lib"
       },
       "locked": {
-        "lastModified": 1738453229,
-        "narHash": "sha256-7H9XgNiGLKN1G1CgRh0vUL4AheZSYzPm+zmZ7vxbJdo=",
+        "lastModified": 1740872218,
+        "narHash": "sha256-ZaMw0pdoUKigLpv9HiNDH2Pjnosg7NBYMJlHTIsHEUo=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "32ea77a06711b758da0ad9bd6a844c5740a87abd",
+        "rev": "3876f6b87db82f33775b1ef5ea343986105db764",
         "type": "github"
       },
       "original": {
@@ -26039,14 +26038,14 @@
     },
     "nixpkgs-lib": {
       "locked": {
-        "lastModified": 1738452942,
-        "narHash": "sha256-vJzFZGaCpnmo7I6i416HaBLpC+hvcURh/BQwROcGIp8=",
+        "lastModified": 1740872140,
+        "narHash": "sha256-3wHafybyRfpUCLoE8M+uPVZinImg3xX+Nm6gEfN3G8I=",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/072a6db25e947df2f31aab9eccd0ab75d5b2da11.tar.gz"
+        "url": "https://github.com/NixOS/nixpkgs/archive/6d3702243441165a03f699f64416f635220f4f15.tar.gz"
       },
       "original": {
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/072a6db25e947df2f31aab9eccd0ab75d5b2da11.tar.gz"
+        "url": "https://github.com/NixOS/nixpkgs/archive/6d3702243441165a03f699f64416f635220f4f15.tar.gz"
       }
     },
     "nixpkgs-lib_10": {
@@ -30323,19 +30322,20 @@
     "ogmios-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1731085301,
-        "narHash": "sha256-oKmPbAncujnkNvU9jB+a2MLvk6FWzuziN9LrelQoNfs=",
-        "ref": "refs/heads/master",
-        "rev": "87a4c4c424db46a32c27bac3546cbfd68f0ecf62",
-        "revCount": 1650,
+        "lastModified": 1738673186,
+        "narHash": "sha256-M5Bx7g86SmruI5mBH9QsmfQDk4q/dUaDTluIKtlGAq0=",
+        "ref": "refs/tags/v6.11.2",
+        "rev": "b80318c5a5c7e48325cc104c35a27ae46d5e7341",
+        "revCount": 1687,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/CardanoSolutions/ogmios?tag=v6.9.0"
+        "url": "https://github.com/CardanoSolutions/ogmios"
       },
       "original": {
+        "ref": "refs/tags/v6.11.2",
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/CardanoSolutions/ogmios?tag=v6.9.0"
+        "url": "https://github.com/CardanoSolutions/ogmios"
       }
     },
     "ogmios-src_2": {
@@ -30387,16 +30387,16 @@
         "ogmios-src": "ogmios-src"
       },
       "locked": {
-        "lastModified": 1732289622,
-        "narHash": "sha256-mYGtcC8q557S4WA50sMMjE/sEr6XXF8BUk9/ll4MojU=",
+        "lastModified": 1739976986,
+        "narHash": "sha256-jjzBCcqQ7BC9XAa3W+LzoFJTAu1rrssjpxxXaFmDQPQ=",
         "owner": "mlabs-haskell",
         "repo": "ogmios-nix",
-        "rev": "2b8806ad234b91e111da75f2621b2f6f0009d94a",
+        "rev": "874c8c922786aa56ab839f73ad7735cfe39438d9",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "v6.9.0",
+        "ref": "v6.11.2",
         "repo": "ogmios-nix",
         "type": "github"
       }

@@ -49,12 +49,6 @@
         buildInputs = [
           pkgs.openssl.dev
         ];
-        testTools = [
-          inputs'.ogmios.packages."ogmios:exe:ogmios"
-          pkgs.cargo-nextest
-          config.packages.demo-haskell-cli
-          self'.packages.demo-tx-village-rust
-        ];
 
         extraSources = [
           # LB base schema and runtime libs
@@ -69,6 +63,8 @@
         ];
 
         devShellTools = [
+          config.packages.demo-haskell-cli
+          self'.packages.demo-tx-village-rust
           self'.packages.pc-demo-tx-village-tests
         ];
 
