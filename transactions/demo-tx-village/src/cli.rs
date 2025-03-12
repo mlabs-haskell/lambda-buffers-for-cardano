@@ -1,9 +1,10 @@
 use clap::value_parser;
 use clap::{Arg, Args, Command};
+use plutus_ledger_api::v3::address::Address;
 use tx_bakery::clap::KeyWalletOpts;
 use tx_bakery_ogmios::clap::OgmiosOpts;
 
-use std::io::{Error, ErrorKind};
+use std::str::FromStr;
 
 // The cli parser for interacting with the system
 pub fn cli() -> Command {
@@ -26,7 +27,7 @@ pub fn cli() -> Command {
                     .arg(Arg::new("address")
                             .help("Bech32 address to query with")
                             .long("address")
-                            .value_parser(clap::builder::ValueParser::new(parse_bech32))
+                            .value_parser(clap::builder::ValueParser::new(Address::from_str))
                             .required(true)
                          )
                     .arg(Arg::new("eq-datum")
@@ -52,31 +53,4 @@ pub fn cli() -> Command {
                                  )
                     )
         )
-}
-
-// Parses an address from a bech32 string
-fn parse_bech32(str: &str) -> Result<plutus_ledger_api::v1::address::Address, std::io::Error> {
-    let result: Result<
-        cardano_serialization_lib::address::Address,
-        cardano_serialization_lib::error::JsError,
-    > = cardano_serialization_lib::address::Address::from_bech32(str);
-
-    match result {
-        Ok(csl_addr) => {
-            let try_from_csl_result: Result<
-                plutus_ledger_api::v1::address::Address,
-                tx_bakery::utils::csl_to_pla::TryFromCSLError,
-            > = tx_bakery::utils::csl_to_pla::TryFromCSL::<
-                cardano_serialization_lib::address::Address,
-            >::try_from_csl(&csl_addr);
-            match try_from_csl_result {
-                Ok(pla_addr) => Ok(pla_addr),
-                Err(try_from_csl_err) => Err(Error::new(
-                    ErrorKind::InvalidInput,
-                    try_from_csl_err.to_string(),
-                )),
-            }
-        }
-        Err(csl_js_err) => Err(Error::new(ErrorKind::InvalidInput, csl_js_err.to_string())),
-    }
 }

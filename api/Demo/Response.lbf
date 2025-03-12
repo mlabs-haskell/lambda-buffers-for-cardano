@@ -4,7 +4,7 @@ module Demo.Response
 
 import Prelude (Text, Eq, Json)
 import Plutus.V1 (PlutusData)
-import Plutus.V2 (TxInfo)
+import Plutus.V3 (TxInfo)
 
 sum Response res 
     = Result (Result res)

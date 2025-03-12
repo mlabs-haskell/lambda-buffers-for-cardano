@@ -1,13 +1,22 @@
 { inputs, ... }:
 {
-  perSystem = { config, system, pkgs, inputs', ... }:
+  perSystem =
+    {
+      config,
+      system,
+      pkgs,
+      inputs',
+      ...
+    }:
     let
       hsFlake = inputs.flake-lang.lib."${system}".haskellPlutusFlake {
         src = ./.;
 
         name = "demo-plutustx";
 
-        inherit (config.settings.haskell) index-state compiler-nix-name;
+        inherit (config.settings.haskell) compiler-nix-name;
+        # Using plutus-tx 1.40.0
+        index-state = "2025-01-29T08:56:13Z";
 
         dependencies = [
           # LB base schema and runtimes libs

@@ -1,20 +1,19 @@
 use lbf_demo_config_api::demo::config::{Config, Script};
+use plutus_ledger_api::v3::address::{Address, Credential};
+use tx_bakery::utils::script::ScriptOrRef;
 
-/// Prints the bech32 encoded eq_validator address to stdout
 pub fn addresses_eq_validator(config: Config, network: u8) {
     let Script(raw_script) = config.eq_validator;
-    let plutus_script: cardano_serialization_lib::plutus::PlutusScript =
-        cardano_serialization_lib::plutus::PlutusScript::new_v2(raw_script);
-    let plutus_script_hash = plutus_script.hash();
-    let plutus_stake_credential =
-        cardano_serialization_lib::address::StakeCredential::from_scripthash(&plutus_script_hash);
-    let plutus_enterprise_address = cardano_serialization_lib::address::EnterpriseAddress::new(
-        network,
-        &plutus_stake_credential,
-    );
-    let plutus_address = plutus_enterprise_address.to_address();
+    let (validator_hash, _) = ScriptOrRef::from_bytes_v3(raw_script)
+        .expect(&format!("Couldn't deserialize Plutus Script"))
+        .as_validator();
 
-    let bech32_address: String = plutus_address.to_bech32(None).unwrap();
+    let addr = Address {
+        credential: Credential::Script(validator_hash.clone()),
+        staking_credential: None,
+    };
+
+    let bech32_address: String = addr.with_extra_info(network).to_string();
 
     print!("{}", bech32_address);
 }

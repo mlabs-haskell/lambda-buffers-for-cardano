@@ -27,18 +27,19 @@
     # Plutarch eDSL
     plutarch.follows = "lbf/plutarch";
 
-    tx-village = {
-      url = "github:mlabs-haskell/tx-village";
-      inputs.lbf.follows = "lbf";
-    };
+    ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
 
-    plutip.url = "github:mlabs-haskell/plutip";
-    ogmios.url = "github:mlabs-haskell/ogmios-nixos";
+    cardano-devnet-flake.url = "github:mlabs-haskell/cardano-devnet-flake";
+    cardano-node.follows = "cardano-devnet-flake/cardano-node";
+    process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
   };
 
-  outputs = inputs@{ flake-parts, ... }:
+  outputs =
+    inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
+        inputs.process-compose-flake.flakeModule
+        inputs.cardano-devnet-flake.flakeModule
         ./pkgs.nix
         ./settings.nix
         ./pre-commit.nix
@@ -53,8 +54,12 @@
         ./transactions/demo-tx-village/build.nix
       ];
       debug = true;
-      systems = [ "x86_64-linux" "x86_64-darwin" ];
-
+      systems = [
+        "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
     };
 
 }

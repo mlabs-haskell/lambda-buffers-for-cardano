@@ -61,12 +61,13 @@ export class Demo {
    *
    * @returns A transaction satisfying the aforementioned properties
    */
-  async createValueTx(
-    { eqValidatorAddress, eqDatum }: {
-      eqValidatorAddress: csl.Address;
-      eqDatum: EqDatum;
-    },
-  ): Promise<csl.Transaction> {
+  async createValueTx({
+    eqValidatorAddress,
+    eqDatum,
+  }: {
+    eqValidatorAddress: csl.Address;
+    eqDatum: EqDatum;
+  }): Promise<csl.Transaction> {
     const txBuilderConfig = await this.query.queryTxBuilderConfig();
     const sk = this.#signingKey;
     const skAddress = this.#signingKeyAddress;
@@ -82,18 +83,17 @@ export class Demo {
        * Create the transaction output at `eqValidatorAddress` with datum
        * `eqDatum`
        */
-      .addOutputWithDataCost((dataCost) =>
-        csl.TransactionOutputBuilder
-          .new()
+      .addOutputWithDataCost(() =>
+        csl.TransactionOutputBuilder.new()
           .with_address(eqValidatorAddress)
-          .with_plutus_data(
-            eqDatumPd,
-          )
+          .with_plutus_data(eqDatumPd)
           .next()
-          .with_asset_and_min_required_coin_by_utxo_cost(
-            csl.MultiAsset.new(),
-            dataCost,
-          )
+          .with_coin(csl.BigNum.from_str("2000000"))
+          // FIXME: I had to hardcode the min UTxO because of a weird error: 'Total input and total output are not equal. Total input: {\n  "coin": "9000000000",\n  "multiasset": null\n}, Total output: {\n  "coin": "9000000000",\n  "multiasset": {}\n}'
+          // .with_asset_and_min_required_coin_by_utxo_cost(
+          //   csl.MultiAsset.new(),
+          //   dataCost,
+          // )
           .build()
       )
       /*
@@ -121,13 +121,15 @@ export class Demo {
    *
    * @returns A transaction satisfying the aforementioned properties
    */
-  async inputIsEqualTx(
-    { eqValidator, eqValidatorTxIn, eqDatum }: {
-      eqValidator: csl.PlutusScript;
-      eqValidatorTxIn: csl.TransactionInput;
-      eqDatum: EqDatum;
-    },
-  ): Promise<csl.Transaction> {
+  async inputIsEqualTx({
+    eqValidator,
+    eqValidatorTxIn,
+    eqDatum,
+  }: {
+    eqValidator: csl.PlutusScript;
+    eqValidatorTxIn: csl.TransactionInput;
+    eqDatum: EqDatum;
+  }): Promise<csl.Transaction> {
     const tx = await this.inputValueTx({
       eqValidator,
       eqValidatorTxIn,
@@ -143,17 +145,15 @@ export class Demo {
    *
    * @returns A transaction satisfying the aforementioned properties
    */
-  async inputIsNotEqualTx(
-    {
-      eqValidator,
-      eqValidatorTxIn,
-      eqDatum,
-    }: {
-      eqValidator: csl.PlutusScript;
-      eqValidatorTxIn: csl.TransactionInput;
-      eqDatum: EqDatum;
-    },
-  ): Promise<csl.Transaction> {
+  async inputIsNotEqualTx({
+    eqValidator,
+    eqValidatorTxIn,
+    eqDatum,
+  }: {
+    eqValidator: csl.PlutusScript;
+    eqValidatorTxIn: csl.TransactionInput;
+    eqDatum: EqDatum;
+  }): Promise<csl.Transaction> {
     const tx = await this.inputValueTx({
       eqValidator,
       eqValidatorTxIn,
@@ -168,13 +168,15 @@ export class Demo {
    *
    * @returns A transaction satisfying the aforementioned properties
    */
-  async inputValueTx(
-    { eqValidator, eqValidatorTxIn, eqRedeemer }: {
-      eqValidator: csl.PlutusScript;
-      eqValidatorTxIn: csl.TransactionInput;
-      eqRedeemer: EqRedeemer;
-    },
-  ): Promise<csl.Transaction> {
+  async inputValueTx({
+    eqValidator,
+    eqValidatorTxIn,
+    eqRedeemer,
+  }: {
+    eqValidator: csl.PlutusScript;
+    eqValidatorTxIn: csl.TransactionInput;
+    eqRedeemer: EqRedeemer;
+  }): Promise<csl.Transaction> {
     const sk = this.#signingKey;
     const skAddress = this.#signingKeyAddress;
     const changeAddress = this.#signingKeyAddress;
@@ -197,7 +199,7 @@ export class Demo {
     //  - pick UTxOs which only have ada (requirement from the ledger) or
     //    use the fancy new collateral features which relax this
     //    requirement
-    collateralInputsBuilder.add_input(
+    collateralInputsBuilder.add_regular_input(
       skAddress,
       availableInputs.get(0).input(),
       availableInputs.get(0).output().amount(),
@@ -219,7 +221,9 @@ export class Demo {
     if (eqValidatorDatum === undefined) {
       throw new Error(
         `No inline datum found for ${
-          JSON.stringify(eqValidatorUtxo.to_js_value())
+          JSON.stringify(
+            eqValidatorUtxo.to_js_value(),
+          )
         }`,
       );
     }

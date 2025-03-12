@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@cardano-ogmios/client": "^6.0.1",
-    "@emurgo/cardano-serialization-lib-nodejs": "^11.5.0",
+    "@emurgo/cardano-serialization-lib-nodejs": "^13.2.0",
     "lbf-demo-config-api": "file:.extra-dependencies/lbf-demo-config-api",
     "lbf-demo-plutus-api": "file:.extra-dependencies/lbf-demo-plutus-api",
     "lbf-plutus": "file:.extra-dependencies/lbf-plutus",

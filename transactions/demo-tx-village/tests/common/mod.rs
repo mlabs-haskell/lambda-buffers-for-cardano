@@ -2,32 +2,29 @@
 //! - Running an integration test suite
 //! - Wrappers for calling the `demo-tx-village` CLI to serialize and deserialize inputs / outputs
 //! to a Rust type
-//! - Setting up the plutip testnet along with other dependencies
+//! - Setting up the local devnet along with other dependencies
 use assert_cmd::Command;
 use lbf_demo_config_api::demo::config::{Config, Script};
-use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer, Product, Record, Sum};
-use lbf_demo_plutus_api::demo::request::{ClaimRequest, LockRequest, Request};
-use lbf_demo_plutus_api::demo::response::Response;
+use lbf_demo_plutus_api::demo::{
+    plutus::{EqDatum, EqRedeemer, Product, Record, Sum},
+    request::{ClaimRequest, LockRequest, Request},
+    response::Response,
+};
 use lbr_prelude::json::Json;
 use num_bigint::BigInt;
-use plutus_ledger_api::v1::transaction::POSIXTime;
-use plutus_ledger_api::v2::address::{Address, Credential};
-use plutus_ledger_api::v2::crypto::LedgerBytes;
-use plutus_ledger_api::v2::script::ValidatorHash;
-use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash};
-use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
-use std::io::Write;
+use plutus_ledger_api::v3::{
+    address::{Address, Credential},
+    crypto::LedgerBytes,
+    script::{MintingPolicyHash, ScriptHash, ValidatorHash},
+    transaction::{POSIXTime, TransactionHash, TransactionInfo, TxInInfo},
+    value::{AssetClass, CurrencySymbol, TokenName},
+};
 use std::time::SystemTime;
+use std::{io::Write, str::FromStr};
 use tokio::fs;
-use tx_bakery::utils::key_wallet::KeyWallet;
 use tx_bakery::utils::script::ScriptOrRef;
 use tx_bakery::wallet::Wallet;
-use tx_bakery_ogmios::{
-    client::{OgmiosClient, OgmiosClientConfigBuilder},
-    launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
-};
-use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
-use url::Url;
+use tx_bakery::{chain_query::Network, utils::key_wallet::KeyWallet};
 
 /// Given an executable, say `myExecutable` which conforms to the CLI of
 ///
@@ -53,11 +50,10 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
     let ((example_eq_datum_a, example_eq_redeemer_a), (example_eq_datum_b, example_eq_redeemer_b)) =
         setup_test_data(script.0.clone());
 
-    let (plutip, _ogmios_launcher, _ogmios) = setup_plutip_test().await;
-
-    let network = plutip.get_network();
-
-    let (skey_path, key_wallet, wallet_addr) = get_the_wallet(&network).await;
+    let testnet_rt = TestRuntime::setup_testnet().await;
+    let network = testnet_rt.network();
+    let wallet = testnet_rt.get_own_wallet().await;
+    let wallet_addr = wallet.get_change_addr();
 
     // Create the UTxO for the lock command (storing the datum)
     // -------------------------------
@@ -76,7 +72,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
             config_path,
             Request {
                 fee_inputs: change_utxos,
-                change_address: key_wallet.get_change_addr(),
+                change_address: wallet_addr.clone(),
                 current_time: POSIXTime(BigInt::from(current_time)),
                 request: LockRequest {
                     eq_datum: example_eq_datum_a.clone(),
@@ -88,7 +84,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
                 demo_tx_village_build_and_submit(
                     config_path,
                     &network,
-                    skey_path.to_str().unwrap(),
+                    testnet_rt.own_skey(),
                     result.tx_info,
                 )
             }
@@ -97,7 +93,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
             }
         };
 
-        eprintln!("Successfully stored EqDatum A @ EqV with {:?}", tx_hash);
+        eprintln!("Successfully stored EqDatum A @ EqV with {}", tx_hash);
     }
 
     // Create the tx for claiming the locked datum
@@ -129,7 +125,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
             config_path,
             Request {
                 fee_inputs: change_utxos,
-                change_address: key_wallet.get_change_addr(),
+                change_address: wallet.get_change_addr(),
                 current_time: POSIXTime(BigInt::from(current_time)),
                 request: ClaimRequest {
                     locked_utxo: utxo_for_datum.clone(),
@@ -142,7 +138,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
                 demo_tx_village_build_and_submit(
                     config_path,
                     &network,
-                    skey_path.to_str().unwrap(),
+                    testnet_rt.own_skey(),
                     result.tx_info,
                 )
             }
@@ -152,7 +148,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
         };
 
         eprintln!(
-            "Successfully checked that they are indeed the same in transaction {:?}",
+            "Successfully checked that they are indeed the same in transaction {}",
             tx_hash
         );
     }
@@ -174,7 +170,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
             config_path,
             Request {
                 fee_inputs: change_utxos,
-                change_address: key_wallet.get_change_addr(),
+                change_address: wallet.get_change_addr(),
                 current_time: POSIXTime(BigInt::from(current_time)),
                 request: LockRequest {
                     eq_datum: example_eq_datum_b.clone(),
@@ -186,7 +182,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
                 demo_tx_village_build_and_submit(
                     config_path,
                     &network,
-                    skey_path.to_str().unwrap(),
+                    testnet_rt.own_skey(),
                     result.tx_info,
                 )
             }
@@ -194,7 +190,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
                 panic!("{:?}", err)
             }
         };
-        eprintln!("Successfully stored EqDatum B with {:?}", tx_hash);
+        eprintln!("Successfully stored EqDatum B with {}", tx_hash);
     }
 
     // Create the tx for claiming the locked datum
@@ -228,7 +224,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
             config_path,
             Request {
                 fee_inputs: change_utxos,
-                change_address: key_wallet.get_change_addr(),
+                change_address: wallet.get_change_addr(),
                 current_time: POSIXTime(BigInt::from(current_time)),
                 request: ClaimRequest {
                     locked_utxo: utxo_for_datum.clone(),
@@ -241,7 +237,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
                 demo_tx_village_build_and_submit(
                     config_path,
                     &network,
-                    skey_path.to_str().unwrap(),
+                    testnet_rt.own_skey(),
                     result.tx_info,
                 )
             }
@@ -251,7 +247,7 @@ pub async fn run_integration_test(executable: &str, config_path: &str) {
         };
 
         eprintln!(
-            "Successfully check that they are indeed different in transaction {:?}",
+            "Successfully check that they are indeed different in transaction {}",
             tx_hash
         );
     }
@@ -344,33 +340,30 @@ pub fn cli_claim_response(
 }
 
 /// Calls the demo-tx-village CLI to return the eq_validator address
-pub fn demo_tx_village_eq_validator_address(
-    config_path: &str,
-    network: &tx_bakery::chain_query::Network,
-) -> cardano_serialization_lib::address::Address {
-    let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
+pub fn demo_tx_village_eq_validator_address(config_path: &str, network: &Network) -> Address {
+    let mut cmd = Command::new("demo-tx-village");
 
     let assert = cmd
         .env("DEMO_CONFIG", config_path)
         .arg("addresses")
         .arg("eq-validator")
         .arg("--network")
-        .arg(network_to_cli_string(&network));
+        .arg(network_to_cli_string(network));
 
     let stdout_contents =
         String::from_utf8(assert.assert().success().get_output().stdout.clone()).unwrap();
 
-    cardano_serialization_lib::address::Address::from_bech32(&stdout_contents).unwrap()
+    Address::from_str(&stdout_contents).unwrap()
 }
 
 /// Calls the demo-tx-village CLI to query the blockchain for UTxOs
 pub fn demo_tx_village_query_utxos(
     config_path: &str,
-    network: &tx_bakery::chain_query::Network,
-    addr: cardano_serialization_lib::address::Address,
-    option_eq_datum: Option<lbf_demo_plutus_api::demo::plutus::EqDatum>,
-) -> std::vec::Vec<plutus_ledger_api::v2::transaction::TxInInfo> {
-    let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
+    network: &Network,
+    addr: Address,
+    option_eq_datum: Option<EqDatum>,
+) -> std::vec::Vec<TxInInfo> {
+    let mut cmd = Command::new("demo-tx-village");
 
     let mut temp_file = tempfile::NamedTempFile::new().unwrap();
 
@@ -378,9 +371,9 @@ pub fn demo_tx_village_query_utxos(
         .env("DEMO_CONFIG", config_path)
         .arg("query-utxos")
         .arg("--address")
-        .arg(addr.to_bech32(None).unwrap())
+        .arg(addr.with_extra_info(network.to_network_id()).to_string())
         .arg("--network")
-        .arg(network_to_cli_string(&network));
+        .arg(network_to_cli_string(network));
 
     if let Some(eq_datum) = option_eq_datum {
         let json_string_eq_datum = eq_datum.to_json_string();
@@ -408,9 +401,9 @@ pub fn demo_tx_village_build_and_submit(
     config_path: &str,
     network: &tx_bakery::chain_query::Network,
     signing_key_file: &str,
-    tx_info: plutus_ledger_api::v2::transaction::TransactionInfo,
-) -> plutus_ledger_api::v1::transaction::TransactionHash {
-    let mut cmd = Command::cargo_bin("demo-tx-village").unwrap();
+    tx_info: TransactionInfo,
+) -> TransactionHash {
+    let mut cmd = Command::new("demo-tx-village");
 
     let assert = cmd
         .env("DEMO_CONFIG", config_path)
@@ -418,7 +411,7 @@ pub fn demo_tx_village_build_and_submit(
         .arg("--signing-key-file")
         .arg(signing_key_file)
         .arg("--network")
-        .arg(network_to_cli_string(&network))
+        .arg(network_to_cli_string(network))
         .write_stdin(tx_info.to_json_string());
 
     let assert_success = assert.assert().success();
@@ -430,60 +423,8 @@ pub fn demo_tx_village_build_and_submit(
 
     let stdout_contents = String::from_utf8(output.stdout.clone()).unwrap();
 
-    let result = Json::from_json_string(&stdout_contents).unwrap();
-
-    result
+    Json::from_json_string(&stdout_contents).unwrap()
 }
-
-/// Returns a triplet of:
-/// - The first wallet's `.skey` path
-/// - The first wallet's `KeyWallet` type
-/// - The first wallet's csl `Address`
-/// WARNING: this assumes that we used tx-villages plutip launcher which puts the wallets in the
-/// `WALLETS_DIR` directory.
-pub async fn get_the_wallet(
-    network: &tx_bakery::chain_query::Network,
-) -> (
-    std::path::PathBuf,
-    KeyWallet,
-    cardano_serialization_lib::address::Address,
-) {
-    let entries = std::fs::read_dir::<std::path::PathBuf>(WALLETS_DIR.into());
-
-    let an_skey: std::path::PathBuf = entries
-        .unwrap()
-        .find(|result_dir_entry| match result_dir_entry {
-            Ok(dir_entry) => dir_entry.path().extension() == Some(std::ffi::OsStr::new("skey")),
-            Err(_) => false,
-        })
-        .unwrap()
-        .expect("Failed to find a secret key file")
-        .path();
-    let key_wallet = KeyWallet::new(an_skey.clone(), None::<std::path::PathBuf>)
-        .await
-        .unwrap();
-    let key_wallet_change_pkh = key_wallet.get_change_pkh().0 .0;
-
-    (
-        an_skey.clone(),
-        key_wallet,
-        cardano_serialization_lib::address::EnterpriseAddress::new(
-            network.to_network_id(),
-            &cardano_serialization_lib::address::StakeCredential::from_keyhash(
-                &cardano_serialization_lib::crypto::Ed25519KeyHash::from_bytes(
-                    key_wallet_change_pkh,
-                )
-                .unwrap(),
-            ),
-        )
-        .to_address(),
-    )
-}
-
-/// The hardcoded path of the directory of the wallets
-/// NOTE(jaredponn) October 16, 2024: This matches the hardcoded values in tx-village
-///
-pub static WALLETS_DIR: &str = ".wallets";
 
 /// Creates the test data of
 ///
@@ -495,7 +436,7 @@ pub static WALLETS_DIR: &str = ".wallets";
 pub fn setup_test_data(
     validator_hash: ValidatorHash,
 ) -> ((EqDatum, EqRedeemer), (EqDatum, EqRedeemer)) {
-    let example_token_name = TokenName::from_string("example token name");
+    let example_token_name = TokenName::from_string("example token name").unwrap();
     let example_currency_symbol =
         CurrencySymbol::NativeToken(MintingPolicyHash(ScriptHash(LedgerBytes([0].repeat(28)))));
 
@@ -562,7 +503,7 @@ pub async fn read_script(path: &str) -> ScriptOrRef {
 
     let Script(raw_script) = conf.eq_validator;
 
-    ScriptOrRef::from_bytes(raw_script).unwrap_or_else(|err| {
+    ScriptOrRef::from_bytes_v3(raw_script).unwrap_or_else(|err| {
         panic!(
             "Couldn't deserialize PlutusScript of file {} with error {}",
             path, err
@@ -570,31 +511,33 @@ pub async fn read_script(path: &str) -> ScriptOrRef {
     })
 }
 
-/// Sets up plutip + ogmios for the tests
-pub async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
-    let plutip_config = PlutipConfigBuilder::default()._utxos(5).build().unwrap();
-    let plutip = Plutip::start(plutip_config).await.unwrap();
-
-    let ogmios_config = OgmiosLauncherConfigBuilder::default()
-        .node_socket(plutip.get_node_socket())
-        .node_config(plutip.get_node_config_path().await)
-        .build()
-        .unwrap();
-    let ogmios_launcher = OgmiosLauncher::start(ogmios_config).await.unwrap();
-
-    let ogmios_client_config = OgmiosClientConfigBuilder::default()
-        .network(plutip.get_network())
-        .url(Url::parse("http://127.0.0.1:1337").unwrap())
-        .build()
-        .unwrap();
-    let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
-
-    (plutip, ogmios_launcher, ogmios_client)
+struct TestRuntime {
+    network: Network,
 }
 
-fn network_to_cli_string(network: &tx_bakery::chain_query::Network) -> &str {
+impl TestRuntime {
+    async fn setup_testnet() -> Self {
+        let network = Network::Testnet;
+
+        TestRuntime { network }
+    }
+
+    async fn get_own_wallet(&self) -> KeyWallet {
+        KeyWallet::new_enterprise(self.own_skey()).await.unwrap()
+    }
+
+    fn own_skey(&self) -> &str {
+        "./wallets/test.skey"
+    }
+
+    fn network(&self) -> Network {
+        self.network.clone()
+    }
+}
+
+fn network_to_cli_string(network: &Network) -> &str {
     match network {
-        tx_bakery::chain_query::Network::Testnet => "testnet",
-        tx_bakery::chain_query::Network::Mainnet => "mainnet",
+        Network::Testnet => "testnet",
+        Network::Mainnet => "mainnet",
     }
 }

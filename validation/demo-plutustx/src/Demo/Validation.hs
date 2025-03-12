@@ -4,22 +4,36 @@ module Demo.Validation (eqValidator) where
 
 import LambdaBuffers.Demo.Plutus.PlutusTx (EqDatum, EqRedeemer (EqRedeemer'IsEqual, EqRedeemer'IsNotEqual))
 import LambdaBuffers.Runtime.PlutusTx ()
-import PlutusTx (BuiltinData, FromData (fromBuiltinData))
+import PlutusLedgerApi.Data.V3 (Datum (getDatum), Redeemer (getRedeemer), scriptContextRedeemer, scriptContextScriptInfo)
+import PlutusLedgerApi.Data.V3 qualified as V3Data
+import PlutusTx qualified
 import PlutusTx.Lift ()
 import PlutusTx.Maybe (Maybe (Just, Nothing))
-import PlutusTx.Prelude (Bool (False), Eq ((==)), error, not, trace, ($))
+import PlutusTx.Prelude (Bool, BuiltinUnit, Eq ((==)), check, traceError, (/=))
+
+{-# INLINEABLE typedEqValidator #-}
+typedEqValidator :: EqDatum -> EqRedeemer -> Bool
+typedEqValidator eqDatum eqRedeemer =
+  case eqRedeemer of
+    EqRedeemer'IsEqual dat -> eqDatum == dat
+    EqRedeemer'IsNotEqual dat -> eqDatum /= dat
 
 {-# INLINEABLE eqValidator #-}
-eqValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
-eqValidator datum redeemer _ctx =
-  let
-    mayEqDatum = fromBuiltinData @EqDatum datum
-    mayEqRedeemer = fromBuiltinData @EqRedeemer redeemer
-    validates = case mayEqRedeemer of
-      Just (EqRedeemer'IsEqual dat) -> (PlutusTx.Prelude.==) mayEqDatum (Just dat)
-      Just (EqRedeemer'IsNotEqual dat) -> PlutusTx.Prelude.not $ (PlutusTx.Prelude.==) mayEqDatum (Just dat)
-      Nothing -> False
-   in
-    if validates
-      then ()
-      else trace "[EQ] Validation failed" (error ())
+eqValidator :: V3Data.ScriptContext -> BuiltinUnit
+eqValidator ctx =
+  check (typedEqValidator eqDatum eqRedeemer)
+  where
+    eqDatum :: EqDatum
+    eqDatum =
+      case scriptContextScriptInfo ctx of
+        V3Data.SpendingScript _TxOutRef (Just datum) ->
+          case PlutusTx.fromBuiltinData @EqDatum (getDatum datum) of
+            Just eqDatum' -> eqDatum'
+            Nothing -> traceError "Couldn't parse EqDatum"
+        _ -> traceError "Expected SpendingScript with a datum"
+
+    eqRedeemer :: EqRedeemer
+    eqRedeemer =
+      case PlutusTx.fromBuiltinData @EqRedeemer (getRedeemer (scriptContextRedeemer ctx)) of
+        Just eqRedeemer' -> eqRedeemer'
+        Nothing -> traceError "Couldn't parse EqRedeemer"

@@ -1,5 +1,6 @@
-use plutus_ledger_api::json::Json;
 use plutus_ledger_api::plutus_data::IsPlutusData;
+use plutus_ledger_api::v3::transaction::TransactionOutput;
+use plutus_ledger_api::{json::Json, v3::transaction::TxInInfo};
 use tx_bakery::chain_query::{ChainQuery, Network};
 use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
 use url::Url;
@@ -57,12 +58,11 @@ pub async fn query_utxos(
         });
     }
 
-    let txin_infos: std::vec::Vec<plutus_ledger_api::v2::transaction::TxInInfo> = utxos
+    let txin_infos: std::vec::Vec<TxInInfo> = utxos
         .into_iter()
         .map(|(txin, full_txout)| {
-            let txout: plutus_ledger_api::v2::transaction::TransactionOutput =
-                plutus_ledger_api::v2::transaction::TransactionOutput::from(full_txout);
-            plutus_ledger_api::v2::transaction::TxInInfo::from((txin, txout))
+            let txout = TransactionOutput::from(full_txout);
+            TxInInfo::from((txin, txout))
         })
         .collect();
 

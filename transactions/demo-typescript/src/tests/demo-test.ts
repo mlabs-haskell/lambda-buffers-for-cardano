@@ -1,4 +1,4 @@
-import { after, before, describe, it } from "node:test";
+import { describe, it } from "node:test";
 import * as DemoConfig from "lbf-demo-config-api/LambdaBuffers/Demo/Config.mjs";
 import * as LbrPrelude from "lbr-prelude";
 import * as LbrPlutusV1 from "lbr-plutus/V1.js";
@@ -7,13 +7,12 @@ import * as PlaV1 from "plutus-ledger-api/V1.js";
 import * as PlaPd from "plutus-ledger-api/PlutusData.js";
 import * as PreludeJson from "prelude/Json.js";
 import { EqDatum } from "lbf-demo-plutus-api/LambdaBuffers/Demo/Plutus.mjs";
-import { ChildProcess, spawn } from "node:child_process";
 import { cslPlutusDataToPlaPlutusData } from "../lib/utils.js";
-import { readRtsConfig, RtsConfig } from "../lib/rtsconfig.js";
+import { parseRtsConfig } from "../lib/rtsconfig.js";
 import { Demo } from "../lib/index.js";
 import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
 import * as fs from "node:fs/promises";
-import process from "node:process";
+import { Buffer } from "node:buffer";
 
 /*
  * The test suite!
@@ -29,57 +28,15 @@ import process from "node:process";
  *  - In either case, we run all the tests afterwards.
  */
 describe(`Typescript demo tests`, async () => {
-  /*
-   * Start the runtime services by executing `demo-rts` (or use the existence
-   * runtime services if `TEST_RTS_CONFIG` is set)
-   */
-  let demoRts: ChildProcess = undefined as unknown as ChildProcess;
-  let rtsConfig: RtsConfig = undefined as unknown as RtsConfig;
-  const testRtsConfigFilePath = process.env[`TEST_RTS_CONFIG`];
-
-  function killDemoRts() {
-    if (demoRts.killed === false) {
-      process.kill(-demoRts.pid!, "SIGTERM");
-    }
-  }
-
-  // Start `demo-rts`
-  // NOTE(jaredponn): we use the same cluster for all tests
-  before(async () => {
-    if (testRtsConfigFilePath !== undefined) {
-      rtsConfig = await readRtsConfig(testRtsConfigFilePath);
-    } else {
-      demoRts = spawn("demo-rts", [], {
-        stdio: ["ignore", "pipe", "ignore"],
-        detached: true,
-        env: Object.assign({ "ADA": "10" }, process.env),
-      });
-
-      await new Promise((resolve) => {
-        demoRts.stdout!.on(`data`, (data) => {
-          resolve(data);
-        });
-      });
-      rtsConfig = await readRtsConfig("./demo-rtsconfig.json");
-    }
-  });
-
-  after(async () => {
-    // Kill `demo-rts` when all the tests are done.
-    if (testRtsConfigFilePath === undefined) {
-      await new Promise((resolve, reject) => {
-        demoRts.on("close", (code, signal) => {
-          if (signal === "SIGTERM") {
-            return resolve(true);
-          } else if (code === 0) {
-            return resolve(true);
-          } else {
-            reject(code);
-          }
-        });
-        killDemoRts();
-      });
-    }
+  const rtsConfig = parseRtsConfig({
+    ogmios: {
+      host: "127.0.0.1",
+      port: "1337",
+    },
+    signingKeyCborHex:
+      "5820d0a6e3e3fe44bf64a98e372d31403f46ba76d28462dc55b76a2fa7d0d8f2c0a5",
+    signingKeyAddressBech32:
+      "addr_test1vzj4slwqz4qaftgh67jyzmh7uf6dsvljljy5ammeja4r6ps43uflk",
   });
 
   /*
@@ -90,7 +47,7 @@ describe(`Typescript demo tests`, async () => {
       "data/demo-plutarch-config.json",
     );
     const plutarchEqValidatorBytes = demoPlutarchConfig.eqValidator;
-    const plutarchEqValidator = csl.PlutusScript.new_v2(
+    const plutarchEqValidator = csl.PlutusScript.new_v3(
       plutarchEqValidatorBytes,
     );
 
@@ -121,7 +78,7 @@ describe(`Typescript demo tests`, async () => {
       "data/demo-plutustx-config.json",
     );
     const plutustxEqValidatorBytes = demoPlutusTxConfig.eqValidator;
-    const plutustxEqValidator = csl.PlutusScript.new_v2(
+    const plutustxEqValidator = csl.PlutusScript.new_v3(
       plutustxEqValidatorBytes,
     );
 
@@ -162,11 +119,12 @@ function exampleData(
   );
   const plutarchEqValidatorHash = plutarchEqValidator.hash();
 
-  const plutarchEqValidatorStakeCredential = csl.StakeCredential
-    .from_scripthash(plutarchEqValidatorHash);
+  const plutarchEqValidatorCredential = csl.Credential.from_scripthash(
+    plutarchEqValidatorHash,
+  );
   const plutarchEqValidatorEnterpriseAddress = csl.EnterpriseAddress.new(
-    csl.NetworkId.mainnet().kind(),
-    plutarchEqValidatorStakeCredential,
+    csl.NetworkId.testnet().kind(),
+    plutarchEqValidatorCredential,
   );
   const plutarchEqValidatorAddress = plutarchEqValidatorEnterpriseAddress
     .to_address();
@@ -188,8 +146,9 @@ function exampleData(
     PlaV1.adaSymbol,
     exampleTokenName,
   ];
-  const exampleAddress: PlaV1.Address = LbrPlutusV1
-    .IsPlutusData[LbrPlutusV1.Address].fromData(plutarchEqValidatorPlaAddress);
+  const exampleAddress: PlaV1.Address = LbrPlutusV1.IsPlutusData[
+    LbrPlutusV1.Address
+  ].fromData(plutarchEqValidatorPlaAddress);
 
   const exampleEqDatumA: EqDatum = {
     rec: {
@@ -219,10 +178,10 @@ export function plutusScriptToEnterpriseAddress(
 ): csl.EnterpriseAddress {
   const plutusScriptHash = plutusScript.hash();
 
-  const stakeCredential = csl.StakeCredential.from_scripthash(plutusScriptHash);
+  const credential = csl.Credential.from_scripthash(plutusScriptHash);
   const enterpriseAddress = csl.EnterpriseAddress.new(
-    csl.NetworkId.mainnet().kind(),
-    stakeCredential,
+    csl.NetworkId.testnet().kind(),
+    credential,
   );
   return enterpriseAddress;
 }
@@ -243,6 +202,8 @@ async function eqValidatorTest(
    */
   const findTxIn = async (datum: EqDatum): Promise<csl.TransactionInput> => {
     const utxos = await demo.query.queryAddressUtxos(eqValidatorAddress);
+
+    console.log(utxos);
 
     let datumUtxo: csl.TransactionInput | undefined = undefined;
 
@@ -298,13 +259,11 @@ async function eqValidatorTest(
    */
   const eqDatumATxIn = await findTxIn(exampleEqDatumA);
 
-  const eqDatumAIsEqualTx = await demo.inputIsEqualTx(
-    {
-      eqValidator,
-      eqValidatorTxIn: eqDatumATxIn,
-      eqDatum: exampleEqDatumA,
-    },
-  );
+  const eqDatumAIsEqualTx = await demo.inputIsEqualTx({
+    eqValidator,
+    eqValidatorTxIn: eqDatumATxIn,
+    eqDatum: exampleEqDatumA,
+  });
 
   console.log(
     "Checking if EqDatum A is the same as the one previously stored (it should be)",
@@ -335,13 +294,11 @@ async function eqValidatorTest(
    */
   const eqDatumBTxIn = await findTxIn(exampleEqDatumB);
 
-  const eqDatumBIsEqualTx = await demo.inputIsNotEqualTx(
-    {
-      eqValidator,
-      eqValidatorTxIn: eqDatumBTxIn,
-      eqDatum: exampleEqDatumA,
-    },
-  );
+  const eqDatumBIsEqualTx = await demo.inputIsNotEqualTx({
+    eqValidator,
+    eqValidatorTxIn: eqDatumBTxIn,
+    eqDatum: exampleEqDatumA,
+  });
 
   console.log(
     `Checking if Eq Datum A is different to the one previously stored (it should be)`,

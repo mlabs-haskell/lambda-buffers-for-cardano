@@ -33,9 +33,11 @@ export function plaPlutusDataToCslPlutusData(
     case "Map": {
       const plutusMap = csl.PlutusMap.new();
       for (const elem of plutusData.fields) {
+        const plutusMapValues = csl.PlutusMapValues.new();
+        plutusMapValues.add(plaPlutusDataToCslPlutusData(elem[1]));
         plutusMap.insert(
           plaPlutusDataToCslPlutusData(elem[0]),
-          plaPlutusDataToCslPlutusData(elem[1]),
+          plutusMapValues,
         );
       }
       return csl.PlutusData.new_map(plutusMap);
@@ -74,7 +76,7 @@ export function cslPlutusDataToPlaPlutusData(
       const k = keys.get(i);
       result.push([
         cslPlutusDataToPlaPlutusData(k),
-        cslPlutusDataToPlaPlutusData(map.get(k)!),
+        cslPlutusDataToPlaPlutusData(map.get(k)!.get(0)!),
       ]);
     }
 
@@ -181,9 +183,14 @@ export function ogmiosUtxoToCslUtxo(
           ),
         );
       } else if (utxo.script.language === "plutus:v3") {
-        // TODO(jaredponn): cardano-serialization-lib doesn't have tags for
-        // PlutusV3 yet.
-        throw new Error(`ogmiosUtxoToCslUtxo PlutusV3 not supported yet`);
+        transactionOutput.set_script_ref(
+          csl.ScriptRef.new_plutus_script(
+            csl.PlutusScript.from_hex_with_version(
+              utxo.script.cbor,
+              csl.Language.new_plutus_v3(),
+            ),
+          ),
+        );
       }
     }
 

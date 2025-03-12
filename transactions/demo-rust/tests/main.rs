@@ -4,21 +4,49 @@ mod tests {
     use lbf_demo_config_api::demo::config::{Config, Script};
     use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer, Product, Record, Sum};
     use lbr_prelude::json::Json;
-    use plutus_ledger_api::v2::address::{Address, Credential};
-    use plutus_ledger_api::v2::crypto::LedgerBytes;
-    use plutus_ledger_api::v2::script::ValidatorHash;
-    use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash};
-    use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
+    use plutus_ledger_api::v3::{
+        address::{Address, Credential},
+        crypto::LedgerBytes,
+        script::ValidatorHash,
+        script::{MintingPolicyHash, ScriptHash},
+        value::{AssetClass, CurrencySymbol, TokenName},
+    };
     use serial_test::serial;
     use tokio::fs;
-    use tx_bakery::submitter::Submitter;
-    use tx_bakery::utils::script::ScriptOrRef;
-    use tx_bakery_ogmios::{
-        client::{OgmiosClient, OgmiosClientConfigBuilder},
-        launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
+    use tx_bakery::{
+        chain_query::Network,
+        submitter::Submitter,
+        utils::{key_wallet::KeyWallet, script::ScriptOrRef},
     };
-    use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
+    use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use url::Url;
+
+    struct TestRuntime {
+        ogmios_client: OgmiosClient,
+    }
+
+    impl TestRuntime {
+        async fn setup_testnet() -> Self {
+            let ogmios_client_config = OgmiosClientConfigBuilder::default()
+                .network(Network::Testnet)
+                .url(Url::parse("http://127.0.0.1:1337").unwrap())
+                .build()
+                .unwrap();
+            let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
+
+            TestRuntime { ogmios_client }
+        }
+
+        async fn get_own_wallet(&self) -> KeyWallet {
+            KeyWallet::new_enterprise("./wallets/test.skey")
+                .await
+                .unwrap()
+        }
+
+        fn ogmios_client(&self) -> &OgmiosClient {
+            &self.ogmios_client
+        }
+    }
 
     #[tokio::test]
     #[serial]
@@ -68,12 +96,13 @@ mod tests {
         eq_validator: &(ValidatorHash, ScriptOrRef),
         example_eq_datum: &EqDatum,
     ) {
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_lock_a = lock_eq_datum::build_and_submit(
-            &plutip.get_own_wallet().await.unwrap(),
-            &ogmios,
-            &ogmios,
+            &test_runtime.get_own_wallet().await,
+            ogmios,
+            ogmios,
             eq_validator.clone(),
             example_eq_datum,
         )
@@ -83,12 +112,12 @@ mod tests {
         ogmios.await_tx_confirm(&tx_hash_lock_a).await.unwrap();
 
         let tx_hash_claim_a = claim_eq_datum::build_and_submit(
-            &plutip.get_own_wallet().await.unwrap(),
-            &ogmios,
-            &ogmios,
+            &test_runtime.get_own_wallet().await,
+            ogmios,
+            ogmios,
             eq_validator.clone(),
             &EqRedeemer::IsEqual(example_eq_datum.clone()),
-            &example_eq_datum,
+            example_eq_datum,
         )
         .await
         .unwrap();
@@ -101,12 +130,13 @@ mod tests {
         example_eq_datum_a: &EqDatum,
         example_eq_datum_b: &EqDatum,
     ) {
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_lock_b = lock_eq_datum::build_and_submit(
-            &plutip.get_own_wallet().await.unwrap(),
-            &ogmios,
-            &ogmios,
+            &test_runtime.get_own_wallet().await,
+            ogmios,
+            ogmios,
             eq_validator.clone(),
             example_eq_datum_b,
         )
@@ -116,12 +146,12 @@ mod tests {
         ogmios.await_tx_confirm(&tx_hash_lock_b).await.unwrap();
 
         let tx_hash_claim_b = claim_eq_datum::build_and_submit(
-            &plutip.get_own_wallet().await.unwrap(),
-            &ogmios,
-            &ogmios,
+            &test_runtime.get_own_wallet().await,
+            ogmios,
+            ogmios,
             eq_validator.clone(),
             &EqRedeemer::IsNotEqual(example_eq_datum_a.clone()),
-            &example_eq_datum_b,
+            example_eq_datum_b,
         )
         .await
         .unwrap();
@@ -129,29 +159,8 @@ mod tests {
         ogmios.await_tx_confirm(&tx_hash_claim_b).await.unwrap()
     }
 
-    async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
-        let plutip_config = PlutipConfigBuilder::default().build().unwrap();
-        let plutip = Plutip::start(plutip_config).await.unwrap();
-
-        let ogmios_config = OgmiosLauncherConfigBuilder::default()
-            .node_socket(plutip.get_node_socket())
-            .node_config(plutip.get_node_config_path().await)
-            .build()
-            .unwrap();
-        let ogmios_launcher = OgmiosLauncher::start(ogmios_config).await.unwrap();
-
-        let ogmios_client_config = OgmiosClientConfigBuilder::default()
-            .network(plutip.get_network())
-            .url(Url::parse("http://127.0.0.1:1337").unwrap())
-            .build()
-            .unwrap();
-        let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
-
-        (plutip, ogmios_launcher, ogmios_client)
-    }
-
     fn setup_test_data(validator_hash: ValidatorHash) -> (EqDatum, EqDatum) {
-        let example_token_name = TokenName::from_string("example token name");
+        let example_token_name = TokenName::from_string("example token name").unwrap();
         let example_currency_symbol =
             CurrencySymbol::NativeToken(MintingPolicyHash(ScriptHash(LedgerBytes([0].repeat(28)))));
 
@@ -203,7 +212,7 @@ mod tests {
 
         let Script(raw_script) = conf.eq_validator;
 
-        ScriptOrRef::from_bytes(raw_script).expect(&format!(
+        ScriptOrRef::from_bytes_v3(raw_script).expect(&format!(
             "Couldn't deserialize PlutusScript of file {}.",
             path
         ))

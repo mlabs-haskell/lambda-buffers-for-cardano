@@ -1,11 +1,17 @@
-{ inputs, ... }: {
-  perSystem = { system, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    { system, ... }:
     {
       packages = {
         lbf-demo-plutus-api-haskell = inputs.lbf.lib."${system}".lbfPlutusHaskell {
           name = "lbf-demo-plutus-api";
           src = ./.;
-          files = [ "Demo/Plutus.lbf" "Demo/Request.lbf" "Demo/Response.lbf" ];
+          files = [
+            "Demo/Plutus.lbf"
+            "Demo/Request.lbf"
+            "Demo/Response.lbf"
+          ];
         };
 
         lbf-demo-plutus-api-plutustx = inputs.lbf.lib."${system}".lbfPlutusTx {
@@ -29,7 +35,11 @@
         lbf-demo-plutus-api-rust = inputs.lbf.lib."${system}".lbfPlutusRust {
           name = "lbf-demo-plutus-api";
           src = ./.;
-          files = [ "Demo/Plutus.lbf" "Demo/Request.lbf" "Demo/Response.lbf" ];
+          files = [
+            "Demo/Plutus.lbf"
+            "Demo/Request.lbf"
+            "Demo/Response.lbf"
+          ];
         };
 
         lbf-demo-plutus-api-typescript = inputs.lbf.lib."${system}".lbfPlutusTypescript {

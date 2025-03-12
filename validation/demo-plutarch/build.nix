@@ -1,6 +1,13 @@
 { inputs, ... }:
 {
-  perSystem = { config, system, pkgs, inputs', ... }:
+  perSystem =
+    {
+      config,
+      system,
+      pkgs,
+      inputs',
+      ...
+    }:
     let
       hsFlake = inputs.flake-lang.lib."${system}".haskellPlutusFlake {
         src = ./.;
@@ -21,6 +28,7 @@
 
           # Plutarch itself
           "${inputs.plutarch}"
+          "${inputs.plutarch}/plutarch-ledger-api"
 
           # Demo API
           "${config.packages.lbf-demo-plutus-api-plutarch}"

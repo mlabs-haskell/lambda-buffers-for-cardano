@@ -4,7 +4,7 @@ use demo_rust::{claim_eq_datum, lock_eq_datum};
 use lbf_demo_config_api::demo::config::{Config, Script};
 use lbf_demo_plutus_api::demo::plutus::{EqDatum, EqRedeemer, Product, Record, Sum};
 use lbr_prelude::json::Json;
-use plutus_ledger_api::v2::{
+use plutus_ledger_api::v3::{
     address::{Address, Credential},
     crypto::LedgerBytes,
     script::{MintingPolicyHash, ScriptHash, ValidatorHash},
@@ -126,14 +126,14 @@ async fn read_script(path: &str) -> ScriptOrRef {
 
     let Script(raw_script) = conf.eq_validator;
 
-    ScriptOrRef::from_bytes(raw_script).expect(&format!(
+    ScriptOrRef::from_bytes_v3(raw_script).expect(&format!(
         "Couldn't deserialize PlutusScript of file {}.",
         path
     ))
 }
 
 fn setup_test_data(validator_hash: ValidatorHash) -> EqDatum {
-    let example_token_name = TokenName::from_string("example token name");
+    let example_token_name = TokenName::from_string("example token name").unwrap();
     let example_currency_symbol =
         CurrencySymbol::NativeToken(MintingPolicyHash(ScriptHash(LedgerBytes([0].repeat(28)))));
 

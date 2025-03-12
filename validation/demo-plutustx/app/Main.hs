@@ -58,7 +58,7 @@ options =
       (info (Compile <$> compileOpts <* helper) (progDesc "Compile scripts and write them to a file"))
 
 parserInfo :: ParserInfo Command
-parserInfo = info (options <**> helper) (fullDesc <> progDesc "Demo Plutarch CLI")
+parserInfo = info (options <**> helper) (fullDesc <> progDesc "Demo PlutusTx CLI")
 
 main :: IO ()
 main = do
