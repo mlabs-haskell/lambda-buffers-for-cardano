@@ -5,7 +5,7 @@
     nixpkgs.follows = "lbf/nixpkgs";
 
     # LambdaBuffers for sharing types
-    lbf.url = "github:mlabs-haskell/lambda-buffers/szg251/expand-c13-report";
+    lbf.url = "github:mlabs-haskell/lambda-buffers";
 
     # flake-lang.nix for monorepo setup
     flake-lang.follows = "lbf/flake-lang";
@@ -26,11 +26,6 @@
 
     # Plutarch eDSL
     plutarch.follows = "lbf/plutarch";
-
-    tx-village = {
-      url = "github:mlabs-haskell/tx-village/szg251/v3";
-      inputs.lbf.follows = "lbf";
-    };
 
     ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
 
