@@ -147,7 +147,7 @@ specification parts of which can be inspected by simply using Nix.
 
 #### Testsuites
 
-Testsuites use process-compose to manage the runtime dependencies, such as
+Testsuites use [process-compose](https://github.com/F1bonacc1/process-compose) to manage the runtime dependencies, such as
 cardano-node, ogmios, etc. required for the tests. These can all be executed
 either by a nix command, like
 
