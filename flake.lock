@@ -2715,11 +2715,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1741276351,
-        "narHash": "sha256-ZqBJPEYCynuXHjts2RqQGpLWfgf7/eKPxIbpqG72+zI=",
+        "lastModified": 1746794123,
+        "narHash": "sha256-zKdIg8SHiGmDXhAjBZfG7L2WVbtpw0RVuj2k9pOMPpE=",
         "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
-        "rev": "8203283093918529ce72291e3be4ce6c70211fca",
+        "rev": "71ba8bd49816ce2bda389f33701c321f1ba791fa",
         "type": "github"
       },
       "original": {
