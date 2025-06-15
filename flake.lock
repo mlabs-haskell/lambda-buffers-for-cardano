@@ -2715,11 +2715,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1741276351,
-        "narHash": "sha256-ZqBJPEYCynuXHjts2RqQGpLWfgf7/eKPxIbpqG72+zI=",
+        "lastModified": 1747645191,
+        "narHash": "sha256-PqLcL/8gEZkpfu2fTK48/S/GvrQ8B3snVBNsB/N5Sq4=",
         "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
-        "rev": "8203283093918529ce72291e3be4ce6c70211fca",
+        "rev": "2169b5e8e22dc5a64ae669c6aa722d18be388701",
         "type": "github"
       },
       "original": {
@@ -3875,15 +3875,18 @@
     },
     "customConfig_6": {
       "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-Zd5w1I1Dwt783Q4WuBuCpedcwG1DrIgQGqabyF87prM=",
         "path": "./custom-config",
         "type": "path"
       },
       "original": {
         "path": "./custom-config",
         "type": "path"
-      }
+      },
+      "parent": [
+        "lbf",
+        "ctl",
+        "db-sync"
+      ]
     },
     "customConfig_7": {
       "locked": {
@@ -21099,11 +21102,11 @@
     },
     "process-compose-flake": {
       "locked": {
-        "lastModified": 1740324671,
-        "narHash": "sha256-djc+wRG9L70jlW95Ck4GKr7nTPp1drfsXshJkYZAd9s=",
+        "lastModified": 1749418557,
+        "narHash": "sha256-wJHHckWz4Gvj8HXtM5WVJzSKXAEPvskQANVoRiu2w1w=",
         "owner": "Platonic-Systems",
         "repo": "process-compose-flake",
-        "rev": "2a17e49b8a5d32278ed77e4a881f992472be18a1",
+        "rev": "91dcc48a6298e47e2441ec76df711f4e38eab94e",
         "type": "github"
       },
       "original": {
