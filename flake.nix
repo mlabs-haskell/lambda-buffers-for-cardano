@@ -20,17 +20,19 @@
     pre-commit-hooks.follows = "lbf/pre-commit-hooks";
 
     # Cardano transaction library
-    ctl.follows = "lbf/ctl";
+    ctl.url = "github:Plutonomicon/cardano-transaction-lib";
+
     haskell-nix.follows = "lbf/flake-lang/haskell-nix";
     iohk-nix.follows = "lbf/flake-lang/iohk-nix";
 
     # Plutarch eDSL
     plutarch.follows = "lbf/plutarch";
 
-    ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
+    ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.13.0";
+    kupo.url = "github:mlabs-haskell/kupo-nix/v2.10.0";
 
     cardano-devnet-flake.url = "github:mlabs-haskell/cardano-devnet-flake";
-    cardano-node.follows = "cardano-devnet-flake/cardano-node";
+    cardano-node.url = "github:IntersectMBO/cardano-node/10.1.4";
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
   };
 
