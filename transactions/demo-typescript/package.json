@@ -17,12 +17,12 @@
     "./.extra-dependencies/**/*"
   ],
   "devDependencies": {
-    "@cardano-ogmios/schema": "^6.0.1",
-    "@types/node": "^20.11.19",
-    "typescript": "^5.3.3"
+    "@cardano-ogmios/schema": "^6.13.0",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@cardano-ogmios/client": "^6.0.1",
+    "@cardano-ogmios/client": "^6.13.0",
     "@emurgo/cardano-serialization-lib-nodejs": "^13.2.0",
     "lbf-demo-config-api": "file:.extra-dependencies/lbf-demo-config-api",
     "lbf-demo-plutus-api": "file:.extra-dependencies/lbf-demo-plutus-api",

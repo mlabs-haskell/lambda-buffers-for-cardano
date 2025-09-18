@@ -3,7 +3,6 @@
   perSystem =
     {
       pkgs,
-      pkgsForCtl,
       config,
       system,
       inputs',
@@ -46,16 +45,15 @@
         ];
 
         shell = {
-          withRuntime = false;
           packageLockOnly = true;
           packages = [
-            pkgs.nodejs-18_x
+            pkgs.nodejs
             pkgs.bashInteractive
             pkgs.fd
-            pkgsForCtl.ogmios
-            pkgsForCtl.kupo
+
             self'.packages.pc-demo-ctl-tests
-          ] ++ config.settings.shell.tools;
+          ]
+          ++ config.settings.shell.tools;
           shellHook = config.settings.shell.hook;
         };
 
@@ -166,7 +164,7 @@
 
             ogmios = {
               command = ''
-                ${pkgsForCtl.ogmios}/bin/ogmios \
+                ${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
                   --node-socket ${devnetDir}/node.socket \
                   --node-config ${devnetDir}/config.json
               '';
@@ -184,7 +182,7 @@
 
             kupo = {
               command = ''
-                ${pkgsForCtl.kupo}/bin/kupo \
+                ${inputs'.kupo.packages."kupo:exe:kupo"}/bin/kupo \
                   --node-socket ${devnetDir}/node.socket \
                   --node-config ${devnetDir}/config.json \
                   --in-memory \
